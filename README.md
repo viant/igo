@@ -1,4 +1,4 @@
-# Igo (go evaluator in go)
+# igo (go evaluator in go)
 
 [![GoReportCard](https://goreportcard.com/badge/github.com/viant/igo)](https://goreportcard.com/report/github.com/viant/igo)
 [![GoDoc](https://godoc.org/github.com/viant/igo?status.svg)](https://godoc.org/github.com/viant/igo)
