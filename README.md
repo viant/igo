@@ -282,7 +282,8 @@ BenchmarkLoop_Yaegi-16    	                      1	       3581461319 ns/op	     
 BenchmarkLongLoop_Igo-16                          2         661982642 ns/op               8 B/op          0 allocs/op
 BenchmarkLongLoop_Native-16                      48          24813792 ns/op               0 B/op          0 allocs/op
 ```
-Igo is ~26x times slower than natively compile code.
+Igo is ~26x times slower than natively compile code, 
+whereas Yaegi is ~144x times slower than natively compile code
 
 ## Bugs
 
