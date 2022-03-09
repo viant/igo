@@ -18,9 +18,10 @@ Please refer to [`CHANGELOG.md`](CHANGELOG.md) if you encounter breaking changes
 ## Motivation
 
 The goal of this library is to be able dynamically execute go code directly from Go/WebAssembly 
-within reasonable time. Some existing alternative providing go evaluation on the fly like [GoEval](https://github.com/xtaci/goeval)
-[GoVal](https://github.com/maja42/goval) 
-[Yaegi](https://github.com/traefik/yaegi) are prohibitively slow.
+within reasonable time. Some existing alternative providing go evaluation on the fly are prohibitively slow: 
+- [GoEval](https://github.com/xtaci/goeval)
+- [GoVal](https://github.com/maja42/goval) 
+- [Yaegi](https://github.com/traefik/yaegi) .
 
 See [performance](#performance) section for details.
 
