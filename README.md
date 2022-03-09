@@ -19,7 +19,8 @@ Please refer to [`CHANGELOG.md`](CHANGELOG.md) if you encounter breaking changes
 
 The goal of this library is to be able dynamically execute go code directly from Go/WebAssembly 
 within reasonable time. Some existing alternative providing go evaluation on the fly like [GoEval](https://github.com/xtaci/goeval)
-[GoVal](https://github.com/maja42/goval) are prohibitively slow.
+[GoVal](https://github.com/maja42/goval) 
+[Yaegi](https://github.com/traefik/yaegi) are prohibitively slow.
 
 See [performance](#performance) section for details.
 
@@ -277,6 +278,7 @@ See the following benchmark that runs 100 000 000 loop iteration:
 ```
 
 ```text
+BenchmarkLoop_Yaegi-16    	                      1	       3581461319 ns/op	          47560 B/op	    681 allocs/op
 BenchmarkLongLoop_Igo-16                          2         661982642 ns/op               8 B/op          0 allocs/op
 BenchmarkLongLoop_Native-16                      48          24813792 ns/op               0 B/op          0 allocs/op
 ```

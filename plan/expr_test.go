@@ -1,9 +1,7 @@
 package plan
 
 import (
-	"github.com/maja42/goval"
 	"github.com/stretchr/testify/assert"
-	"github.com/viant/igo/exec/expr"
 	"io"
 	"reflect"
 	"testing"
@@ -298,71 +296,4 @@ func TestScope_Float64Expression(t *testing.T) {
 		actual := anExpr.Compute()
 		assert.Equal(t, testCase.expect, actual, testCase.description)
 	}
-}
-
-var benchIntNativeExpr func(x, y, z int) int
-var benchIntExpr *expr.Int
-
-func initIntExpressionBench() {
-
-	var err error
-	scope := NewScope()
-	scope.DefineVariable("x", intType)
-	scope.DefineVariable("y", intType)
-	scope.DefineVariable("z", intType)
-	benchIntExpr, err = scope.IntExpression("10 + (5 * x / y * (z - 7))")
-	if err != nil {
-		panic(err)
-	}
-
-	benchIntNativeExpr = func(x, y, z int) int {
-		return 10 + (5 * x / y * (z - 7))
-	}
-
-}
-
-func BenchmarkScope_IntExpression(b *testing.B) {
-	initIntExpressionBench()
-	k := 0
-	benchIntExpr.Vars.SetInt("x", 10)
-	benchIntExpr.Vars.SetInt("y", 20)
-	benchIntExpr.Vars.SetInt("z", 30)
-
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		k = benchIntExpr.Compute()
-	}
-	assert.Equal(b, 56, k)
-}
-
-func BenchmarkScope_IntExpression_Native(b *testing.B) {
-	initIntExpressionBench()
-	k := 0
-	x := 10
-	y := 20
-	z := 30
-	b.ReportAllocs()
-
-	for i := 0; i < b.N; i++ {
-		k = benchIntNativeExpr(x, y, z)
-	}
-	assert.Equal(b, 56, k)
-}
-
-func BenchmarkScope_IntExpression_GoVal(b *testing.B) {
-	k := 0
-	x := 10
-	y := 20
-	z := 30
-	eval := goval.NewEvaluator()
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		result, _ := eval.Evaluate("10 + (5 * x / y * (z - 7))", map[string]interface{}{
-			"x": x,
-			"y": y,
-			"z": z,
-		}, nil)
-		k = result.(int)
-	}
-	assert.Equal(b, 56, k)
 }
