@@ -27,7 +27,7 @@ See [performance](#performance) section for details.
 
 In order to reduce execution time, this project first produces execution plan alongside with all variables needed to execute it.
 One execution plan can be shared alongside many instances of scoped variables needed by executor. 
-Scoped Variables holds both execution state  and  variables defined or used in the evluation code.
+Scoped Variables holds both execution state  and  variables defined or used in the evaluation code.
 
 ```go
     scope := plan.NewScope()
