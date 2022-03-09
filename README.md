@@ -96,18 +96,18 @@ import (
 
 func ExampleScope_Compile() {
 	code := `type Foo struct {
-ID int
-Name string
-}
-var foos = make([]*Foo, 0)
-for i:=0;i<10;i++ {
-foos = append(foos, &Foo{ID:i, Name:"nxc"})
-}
-s := 0
-for i, foo := range foos {
-if i %2  == 0 {
-s += foo.ID
-}
+        ID int
+        Name string
+    }
+    var foos = make([]*Foo, 0)
+    for i:=0;i<10;i++ {
+        foos = append(foos, &Foo{ID:i, Name:"nxc"})
+    }
+    s := 0
+    for i, foo := range foos {
+        if i %2  == 0 {
+        s += foo.ID
+    }
 }`
 
 	scope := plan.NewScope()
