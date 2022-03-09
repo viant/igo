@@ -19,7 +19,7 @@ Please refer to [`CHANGELOG.md`](CHANGELOG.md) if you encounter breaking changes
 
 The goal of this library is to be able dynamically execute go code directly from Go/WebAssembly 
 within reasonable time. Some existing alternative providing go evaluation on the fly like [GoEval](https://github.com/xtaci/goeval)
-[GoVal](github.com/maja42/goval) are prohibitively slow.
+[GoVal](https://github.com/maja42/goval) are prohibitively slow.
 
 See [performance](#performance) section for details.
 
@@ -240,7 +240,7 @@ BenchmarkScope_IntExpression-16                 19722770                57.06 ns
 BenchmarkScope_IntExpression_GoVal-16             625620                2040 ns/op          2328 B/op        11 allocs/op
 ```
 
-[GoVal](github.com/maja42/goval) is ~255 slower for the presented expression comparing to natively compiled code, 
+[GoVal](https://github.com/maja42/goval) is ~255 slower for the presented expression comparing to natively compiled code, 
 while Igo is only ~7 times slower
 
 
