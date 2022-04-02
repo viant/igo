@@ -27,16 +27,16 @@ See [performance](#performance) section for details.
 
 ## Introduction
 
-In order to reduce execution time, this project first produces execution plan alongside with all variables needed to execute it.
-One execution plan can be shared alongside many instances of scoped variables needed by executor. 
-Scoped Variables holds both execution state  and  variables defined or used in the evaluation code.
+In order to reduce execution time, this project first produces execution plan alongside with state needed to execute it.
+One execution plan can be shared alongside many instances state needed by executor. 
+State holds both variables and execution state used in the evaluation code.
 
 ```go
     scope := plan.NewScope()
-	executor, varsNew, err := scope.Compile(code)
-    vars := varsNew() //creates memory instance needed by executor
+	executor, stateNew, err := scope.Compile(code)
+    state := stateNew() //creates memory instance needed by executor
 
-    executor.Exec(vars)
+    executor.Exec(state)
 	
 ```
 
@@ -50,7 +50,7 @@ package mypkg
 import (
 	"log"
 	"reflect"
-	"github.com/viant/igo/plan"
+	"github.com/viant/igo"
 )
 
 func ExampleScope_BoolExpression() {
@@ -59,7 +59,7 @@ func ExampleScope_BoolExpression() {
 		Price   float64
 		MetricX float64
 	}
-	scope := plan.NewScope()
+	scope := igo.NewScope()
 	_, err := scope.DefineVariable("perf", reflect.TypeOf(Performance{}))
 	_, err = scope.DefineVariable("threshold", reflect.TypeOf(0.0))
 	if err != nil {
@@ -93,7 +93,7 @@ package mypkg
 import (
 	"log"
 	"fmt"
-	"github.com/viant/igo/plan"
+	"github.com/viant/igo"
 )
 
 func ExampleScope_Compile() {
@@ -112,15 +112,15 @@ func ExampleScope_Compile() {
     }
 }`
 
-	scope := plan.NewScope()
-	executor, varsNew, err := scope.Compile(code)
+	scope := igo.NewScope()
+	executor, stateNew, err := scope.Compile(code)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	vars := varsNew() //variables constructor, one per each concurent execution, execution can be shared
-	executor.Exec(vars)
-	result, _ := vars.Int("s")
+	state := stateNew() //variables constructor, one per each concurent execution, execution can be shared
+	executor.Exec(state)
+	result, _ := state.Int("s")
 	fmt.Printf("result: %v\n", result)
 }
 ```
@@ -134,7 +134,7 @@ import (
 	"log"
 	"fmt"
 	"reflect"
-	"github.com/viant/igo/plan"
+	"github.com/viant/igo"
 )
 
 func ExampleScope_DefineVariable() {
@@ -148,25 +148,25 @@ func ExampleScope_DefineVariable() {
 		Total float64
 	}
 
-	scope := plan.NewScope()
+	scope := igo.NewScope()
 	err := scope.RegisterType(reflect.TypeOf(Account{})) //Register all non-primitive types used in code 
 	if err != nil {
 		log.Fatalln(err)
 	}
-	executor, varsNew, err := scope.Compile(code)
+	executor, stateNew, err := scope.Compile(code)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	vars := varsNew()
-	err = vars.SetValue("accounts", []Account{
+	state := stateNew()
+	err = state.SetValue("accounts", []Account{
 		{Total: 1.3},
 		{Total: 3.7},
 	})
 	if err != nil {
 		log.Fatalln(err)
 	}
-	executor.Exec(vars)
-	result, _ := vars.Float64("x")
+	executor.Exec(state)
+	result, _ := state.Float64("x")
 	fmt.Printf("result: %v\n", result)
 }
 ```
@@ -180,27 +180,27 @@ import (
 	"log"
 	"fmt"
 	"reflect"
-	"github.com/viant/igo/plan"
+	"github.com/viant/igo"
 )
 
 func ExampleScope_Function() {
-    type Foo struct {
-        Z int
-    }
-    scope := plan.NewScope()
-    _ = scope.RegisterType(reflect.TypeOf(Foo{}))
-    fn, err := scope.Function(`func(x, y int, foo Foo) int {
+	type Foo struct {
+		Z int
+	}
+	scope := igo.NewScope()
+	_ = scope.RegisterType(reflect.TypeOf(Foo{}))
+	fn, err := scope.Function(`func(x, y int, foo Foo) int {
             return (x+y)/foo.Z
         }`)
-    if err != nil {
-        log.Fatalln(err)
-    }
-    typeFn, ok := fn.(func(int, int, Foo) int)
-    if ! ok {
-     log.Fatalf("expected: %T, but had: %T", typeFn,fn)
-    }
-    r := typeFn(1, 2, Foo{3})
-    fmt.Printf("%v\n", r)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	typeFn, ok := fn.(func(int, int, Foo) int)
+	if !ok {
+		log.Fatalf("expected: %T, but had: %T", typeFn, fn)
+	}
+	r := typeFn(1, 2, Foo{3})
+	fmt.Printf("%v\n", r)
 }
 ```
 ## Registering types
@@ -209,7 +209,7 @@ To use data types defined outside the code, register type with `(Scope).Register
 `(Scope).RegisterNamedType(name, type)`
 
 ```go
-    scope := plan.NewScope()
+    scope := igo.NewScope()
     _ = scope.RegisterType(reflect.TypeOf(Foo{}))
 
 ```
@@ -221,7 +221,7 @@ DefineVariable
 To use function defined outside the code, register type with `(Scope).RegisterFunc(name, function)` function
 
 ```go
-    scope := plan.NewScope()
+    scope := igo.NewScope()
     scope.RegisterFunc(testCase.fnName, testCase.fn)
 
 ```
