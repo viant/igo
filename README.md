@@ -37,9 +37,9 @@ package mypkg
 import "github.com/viant/igo"
 
 func usage() {
-    scope := igo.NewScope()
+	scope := igo.NewScope()
 	code := "go code here"
-    executor, stateNew, err := scope.Compile(code)
+	executor, stateNew, err := scope.Compile(code)
 	if err != nil {
 		panic(err)
     }
