@@ -1,13 +1,13 @@
 package plan
 
 import (
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"go/ast"
 	"strconv"
 )
 
-func (s *Scope) paramSelectors(params []*ast.Field) ([]*state.Selector, error) {
-	var parameters []*state.Selector
+func (s *Scope) paramSelectors(params []*ast.Field) ([]*exec.Selector, error) {
+	var parameters []*exec.Selector
 	for i, field := range params {
 		paramType, err := s.discoverType(field.Type)
 		if err != nil {

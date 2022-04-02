@@ -2,12 +2,12 @@ package expr
 
 import (
 	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 )
 
 //String represents string result expression
 type String struct {
-	Vars    *state.State
+	Vars    *exec.State
 	compute exec.Compute
 }
 
@@ -17,6 +17,6 @@ func (e *String) Compute() string {
 }
 
 //NewString crates string expression
-func NewString(variables *state.State, compute exec.Compute) *String {
+func NewString(variables *exec.State, compute exec.Compute) *String {
 	return &String{compute: compute, Vars: variables}
 }

@@ -3,7 +3,7 @@ package plan
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"log"
 	"reflect"
 	"strconv"
@@ -514,7 +514,7 @@ func (c *ctest) SetActive(b bool) {
 
 type testFn func(s string) (bool, error)
 
-func (f testFn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
+func (f testFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	s := args[0].Compute(ptr)
 	r, e := f(*(*string)(s))
 	return unsafe.Pointer(&[2]unsafe.Pointer{

@@ -3,16 +3,16 @@ package et
 import (
 	"fmt"
 	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"github.com/viant/xunsafe"
 	"reflect"
 	"unsafe"
 )
 
 type makeSlice struct {
-	len      *state.Operand
-	cap      *state.Operand
-	dest     *state.Selector
+	len      *exec.Operand
+	cap      *exec.Operand
+	dest     *exec.Selector
 	destType reflect.Type
 }
 

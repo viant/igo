@@ -1,6 +1,6 @@
 package exec
 
-import "github.com/viant/igo/state"
+import "github.com/viant/igo/exec"
 
 //Executor abstraction holding execution plan (execution syntax tree) to execute it
 type Executor struct {
@@ -10,7 +10,7 @@ type Executor struct {
 }
 
 //Exec executes execution plan
-func (e *Executor) Exec(state *state.State) {
+func (e *Executor) Exec(state *exec.State) {
 	ptr := state.Pointer()
 	AsFlow(ptr).Reset()
 	e.compute(state.Pointer())

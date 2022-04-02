@@ -2,7 +2,7 @@ package plan
 
 import (
 	"fmt"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"github.com/viant/xunsafe"
 	"go/ast"
 	"reflect"
@@ -11,7 +11,7 @@ import (
 )
 
 //Selector returns a selector
-func (s *Scope) Selector(expr string) (*state.Selector, error) {
+func (s *Scope) Selector(expr string) (*exec.Selector, error) {
 	selector := s.lookup(expr)
 	if selector != nil {
 		return selector, nil
@@ -20,7 +20,7 @@ func (s *Scope) Selector(expr string) (*state.Selector, error) {
 	return nil, fmt.Errorf("undefied variable: %v %v", expr, s.index)
 }
 
-func (s *Scope) lookup(expr string) *state.Selector {
+func (s *Scope) lookup(expr string) *exec.Selector {
 	if idx, ok := s.index[s.prefix+expr]; ok {
 		return (*s.selectors)[idx]
 	}
@@ -38,16 +38,16 @@ func (s *Scope) lookup(expr string) *state.Selector {
 }
 
 //DefineVariable defines variables
-func (s *Scope) DefineVariable(name string, fType reflect.Type) (*state.Selector, error) {
+func (s *Scope) DefineVariable(name string, fType reflect.Type) (*exec.Selector, error) {
 	id := s.varID(name)
 	if s.lookup(id) != nil {
 		return nil, fmt.Errorf("variable %v already defined", fType.Name())
 	}
-	sel := &state.Selector{Field: &xunsafe.Field{Name: s.varName(name), Type: fType}, ID: id}
+	sel := &exec.Selector{Field: &xunsafe.Field{Name: s.varName(name), Type: fType}, ID: id}
 	if fType != nil {
 		_ = s.RegisterType(fType)
 	}
-	sel.Ancestors = []*state.Selector{}
+	sel.Ancestors = []*exec.Selector{}
 	var err error
 	if fType != nil {
 		err = s.appendSelector(sel)
@@ -55,22 +55,22 @@ func (s *Scope) DefineVariable(name string, fType reflect.Type) (*state.Selector
 	return sel, err
 }
 
-func (s *Scope) newTransient() (*state.Selector, error) {
+func (s *Scope) newTransient() (*exec.Selector, error) {
 	id := "_transient" + strconv.Itoa(*s.transients)
 	*s.transients++
 	return s.DefineVariable(id, nil)
 }
 
 
-func (s *Scope) selector(expr ast.Expr, define bool) (*state.Selector, error) {
+func (s *Scope) selector(expr ast.Expr, define bool) (*exec.Selector, error) {
 	id := stringifyExpr(expr, 0)
 	if sel := s.lookup(id); sel != nil {
 		return sel, nil
 	}
-	var parent *state.Selector
+	var parent *exec.Selector
 	i := 0
 	if id == "nil" {
-		return &state.Selector{ID: "nil", Field: &xunsafe.Field{Name: "nil"}}, nil
+		return &exec.Selector{ID: "nil", Field: &xunsafe.Field{Name: "nil"}}, nil
 	}
 
 	for ; ; i++ {
@@ -106,10 +106,10 @@ func (s *Scope) selector(expr ast.Expr, define bool) (*state.Selector, error) {
 	return s.addSelector(parent, leafExpr)
 }
 
-func (s *Scope) addSelector(parent *state.Selector, expr ast.Expr) (*state.Selector, error) {
+func (s *Scope) addSelector(parent *exec.Selector, expr ast.Expr) (*exec.Selector, error) {
 	var err error
-	sel := &state.Selector{Field: &xunsafe.Field{}}
-	sel.Ancestors = make([]*state.Selector, len(parent.Ancestors)+1)
+	sel := &exec.Selector{Field: &xunsafe.Field{}}
+	sel.Ancestors = make([]*exec.Selector, len(parent.Ancestors)+1)
 	if len(parent.Ancestors) > 0 {
 		copy(sel.Ancestors, parent.Ancestors)
 	}
@@ -132,7 +132,7 @@ func (s *Scope) addSelector(parent *state.Selector, expr ast.Expr) (*state.Selec
 	return sel, err
 }
 
-func (s *Scope) addSelectorNode(parent *state.Selector, actual *ast.SelectorExpr) (*state.Selector, error) {
+func (s *Scope) addSelectorNode(parent *exec.Selector, actual *ast.SelectorExpr) (*exec.Selector, error) {
 	var err error
 	parent, err = s.addSelector(parent, actual.X)
 	if err != nil {
@@ -141,7 +141,7 @@ func (s *Scope) addSelectorNode(parent *state.Selector, actual *ast.SelectorExpr
 	return s.addSelector(parent, actual.Sel)
 }
 
-func (s *Scope) addIndexSelector(parent *state.Selector, actual *ast.IndexExpr, sel *state.Selector) error {
+func (s *Scope) addIndexSelector(parent *exec.Selector, actual *ast.IndexExpr, sel *exec.Selector) error {
 	sel.Type = parent.Type.Elem()
 	sel.ID = parent.ID + "[" + stringifyExpr(actual.Index, 0) + "]"
 	sel.Slice = xunsafe.NewSlice(parent.Type)
@@ -165,7 +165,7 @@ func (s *Scope) varName(name string) string {
 	return varName
 }
 
-func (s *Scope) appendSelector(sel *state.Selector) error {
+func (s *Scope) appendSelector(sel *exec.Selector) error {
 	index := len(*s.selectors)
 	if sel.ID == "" {
 		return fmt.Errorf("selector ID was empty")
@@ -184,7 +184,7 @@ func (s *Scope) appendSelector(sel *state.Selector) error {
 	if len(sel.Ancestors) == 0 {
 		sel.Field = s.mem.addField(sel.Name, sel.Type)
 	}
-	sel.Pathway = state.SelectorPathway(sel)
+	sel.Pathway = exec.SelectorPathway(sel)
 	if sel.Index != nil {
 		if sel.Slice == nil {
 			return fmt.Errorf("index slice was empty: %v", sel.Name)
@@ -196,7 +196,7 @@ func (s *Scope) appendSelector(sel *state.Selector) error {
 }
 
 //adjust selector type from inferred expression (t nsType)
-func (s *Scope) adjust(selector *state.Selector, t reflect.Type) error {
+func (s *Scope) adjust(selector *exec.Selector, t reflect.Type) error {
 	if selector.Type == nil {
 		selector.Type = t
 	}

@@ -2,7 +2,7 @@ package et
 
 import (
 	"fmt"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"github.com/viant/xunsafe"
 )
 
@@ -15,17 +15,17 @@ const (
 //Operands represents opertands
 type Operands []*Operand
 
-func (o Operands) pathway() state.Pathway {
-	result := state.PathwayUndefined
+func (o Operands) pathway() exec.Pathway {
+	result := exec.PathwayUndefined
 	for _, candidate := range o {
 		if candidate.Selector == nil {
-			return state.PathwayUndefined
+			return exec.PathwayUndefined
 		}
 		if candidate.Pathway >= result {
 			result = candidate.Pathway
 			continue
 		}
-		result = state.PathwayRef
+		result = exec.PathwayRef
 	}
 	return result
 }
@@ -68,8 +68,8 @@ func (o Operands) assignExpr(control *Control) (*assignExpr, error) {
 	return result, err
 }
 
-func (o Operands) operands(control *Control) ([]*state.Operand, error) {
-	var result = make([]*state.Operand, len(o))
+func (o Operands) operands(control *Control) ([]*exec.Operand, error) {
+	var result = make([]*exec.Operand, len(o))
 	var err error
 	for i, operand := range o {
 		if result[i], err = operand.NewOperand(control); err != nil {
@@ -79,8 +79,8 @@ func (o Operands) operands(control *Control) ([]*state.Operand, error) {
 	return result, nil
 }
 
-func (o Operands) selectors() []*state.Selector {
-	var result = make([]*state.Selector, len(o))
+func (o Operands) selectors() []*exec.Selector {
+	var result = make([]*exec.Selector, len(o))
 	for i, operand := range o {
 		result[i] = operand.Selector
 	}

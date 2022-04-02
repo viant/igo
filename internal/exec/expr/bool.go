@@ -2,12 +2,12 @@ package expr
 
 import (
 	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 )
 
 //Bool represents bool result expression
 type Bool struct {
-	Vars    *state.State
+	Vars    *exec.State
 	compute exec.Compute
 }
 
@@ -17,6 +17,6 @@ func (e *Bool) Compute() bool {
 }
 
 //NewBool crates a bool expr
-func NewBool(variables *state.State, compute exec.Compute) *Bool {
+func NewBool(variables *exec.State, compute exec.Compute) *Bool {
 	return &Bool{compute: compute, Vars: variables}
 }

@@ -2,14 +2,14 @@ package et
 
 import (
 	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"github.com/viant/xunsafe"
 	"reflect"
 	"unsafe"
 )
 
 //NewMapper creates a mapper
-func NewMapper(x *state.Selector, params []*state.Selector, results []*state.Selector, body New) (New, reflect.Type, error) {
+func NewMapper(x *exec.Selector, params []*exec.Selector, results []*exec.Selector, body New) (New, reflect.Type, error) {
 	destType := results[0].Type
 	destSliceType := reflect.SliceOf(destType)
 	return func(control *Control) (exec.Compute, error) {
@@ -37,8 +37,8 @@ type mapper struct {
 	isComponentPtr bool
 	xElemType      *xunsafe.Type
 	derefElem      bool
-	x              *state.Selector
-	value          *state.Selector
+	x              *exec.Selector
+	value          *exec.Selector
 	hasIndex       bool
 	indexOffset    uintptr
 }

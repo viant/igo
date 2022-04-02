@@ -8,14 +8,14 @@ import (
 	"github.com/viant/igo/internal/exec"
 	"github.com/viant/igo/internal/exec/expr"
 	"github.com/viant/igo/internal/plan"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"github.com/xtaci/goeval"
 	"reflect"
 	"testing"
 )
 
 var benchExecution *exec.Executor
-var benchVars *state.State
+var benchVars *exec.State
 var benchNative = func() int {
 	z := 0
 	a := 100000000
@@ -40,7 +40,7 @@ var benchLoopCode = `
 func initForBench() {
 
 	scope := plan.NewScope()
-	var newVars state.New
+	var newVars exec.New
 	var err error
 	benchExecution, newVars, err = scope.Compile(benchLoopCode)
 	if err != nil {
@@ -125,12 +125,12 @@ func Benchmark_Loop_Igo(b *testing.B) {
 }
 
 var benchLoopIgo *exec.Executor
-var benchLoopIgoVars *state.State
+var benchLoopIgoVars *exec.State
 
 func initLoopIgo() {
 	scope := plan.NewScope()
 	scope.RegisterFunc("print", testPrintln)
-	var stateNew state.New
+	var stateNew exec.New
 	var err error
 	benchLoopIgo, stateNew, err = scope.Compile(`count :=0
 for i :=0;i<100;i++ {

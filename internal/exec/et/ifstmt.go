@@ -2,12 +2,12 @@ package et
 
 import (
 	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"unsafe"
 )
 
 type ifElseStmt struct {
-	cond       *state.Operand
+	cond       *exec.Operand
 	whenBranch exec.Compute
 	elseBranch exec.Compute
 }

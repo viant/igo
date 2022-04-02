@@ -1,7 +1,7 @@
 package plan
 
 import (
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"github.com/viant/xunsafe"
 	"reflect"
 	"unsafe"
@@ -9,7 +9,7 @@ import (
 
 type iiiFn func(int, int) int
 
-func (f iiiFn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
+func (f iiiFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	x := xunsafe.AsInt(args[0].Compute(ptr))
 	y := xunsafe.AsInt(args[1].Compute(ptr))
 	z := f(x, y)
@@ -18,7 +18,7 @@ func (f iiiFn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
 
 type f64f64f64Fn func(float64, float64) float64
 
-func (f f64f64f64Fn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
+func (f f64f64f64Fn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	x := xunsafe.AsFloat64(args[0].Compute(ptr))
 	y := xunsafe.AsFloat64(args[1].Compute(ptr))
 	z := f(x, y)
@@ -27,7 +27,7 @@ func (f f64f64f64Fn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Poin
 
 type ssFn func(string, string) string
 
-func (f ssFn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
+func (f ssFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	x := xunsafe.AsString(args[0].Compute(ptr))
 	y := xunsafe.AsString(args[1].Compute(ptr))
 	z := f(x, y)
@@ -37,7 +37,7 @@ func (f ssFn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
 
 type svrFn func(string, ...interface{})
 
-func (f svrFn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
+func (f svrFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	x := xunsafe.AsString(args[0].Compute(ptr))
 	switch len(args) - 1 { //avoid mem allocation with upto 3 var args
 	case 0:
@@ -66,7 +66,7 @@ func (f svrFn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
 
 type svrieFn func(string, ...interface{}) (int, error)
 
-func (f svrieFn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
+func (f svrieFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	var i int
 	var err error
 	x := xunsafe.AsString(args[0].Compute(ptr))
@@ -102,7 +102,7 @@ func (f svrieFn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer 
 
 type vrieFn func(...interface{}) (int, error)
 
-func (f vrieFn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
+func (f vrieFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	v :=0
 	i := &v
 	var vErr error
@@ -140,7 +140,7 @@ func (f vrieFn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
 
 type svrs func(string, ...interface{}) string
 
-func (f svrs) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
+func (f svrs) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	result := ""
 	x := xunsafe.AsString(args[0].Compute(ptr))
 	switch len(args) - 1 { //avoid mem allocation with upto 3 var args
@@ -170,7 +170,7 @@ func (f svrs) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
 
 type viFn func(interface{}) int
 
-func (f viFn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
+func (f viFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	x := args[0].Interface(args[0].Compute(ptr))
 	r := f(x)
 	return unsafe.Pointer(&r)
@@ -178,7 +178,7 @@ func (f viFn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
 
 type vf32Fn func(interface{}) float32
 
-func (f vf32Fn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
+func (f vf32Fn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	x := args[0].Interface(args[0].Compute(ptr))
 	r := f(x)
 	return unsafe.Pointer(&r)
@@ -186,7 +186,7 @@ func (f vf32Fn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
 
 type vf64Fn func(interface{}) float64
 
-func (f vf64Fn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
+func (f vf64Fn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	x := args[0].Interface(args[0].Compute(ptr))
 	r := f(x)
 	return unsafe.Pointer(&r)
@@ -195,7 +195,7 @@ func (f vf64Fn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
 
 type vbFn func(interface{}) bool
 
-func (f vbFn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
+func (f vbFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	x := args[0].Interface(args[0].Compute(ptr))
 	r := f(x)
 	return unsafe.Pointer(&r)
@@ -204,7 +204,7 @@ func (f vbFn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
 
 type vsFn func(interface{}) string
 
-func (f vsFn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
+func (f vsFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	x := args[0].Interface(args[0].Compute(ptr))
 	r := f(x)
 	return unsafe.Pointer(&r)
@@ -212,7 +212,7 @@ func (f vsFn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
 
 type vvsvFn func(interface{}, ...interface{}) interface{}
 
-func (f vvsvFn) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
+func (f vvsvFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	var result interface{}
 	x := args[0].Interface(args[0].Compute(ptr))
 	switch len(args) - 1 { //avoid mem allocation with upto 3 var args
@@ -256,15 +256,15 @@ var buildInCallerTypes = []reflect.Type{
 	reflect.TypeOf(new(vrieFn)).Elem(),
 }
 
-func asCaller(fn interface{}) state.Caller {
-	if caller, ok := fn.(state.Caller); ok {
+func asCaller(fn interface{}) exec.Caller {
+	if caller, ok := fn.(exec.Caller); ok {
 		return caller
 	}
 	fnValue := reflect.ValueOf(fn)
 	for _, candidate := range buildInCallerTypes {
 		if fnValue.CanConvert(candidate) {
 			res := fnValue.Convert(candidate).Interface()
-			return res.(state.Caller)
+			return res.(exec.Caller)
 		}
 	}
 	return nil

@@ -3,14 +3,14 @@ package plan
 import (
 	"fmt"
 	"github.com/viant/igo/internal/exec/et"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"go/ast"
 	"reflect"
 )
 
 func (s *Scope) compileRangeStmt(rangeStmt *ast.RangeStmt) (et.New, error) {
 	var x *et.Operand
-	var key, value *state.Selector
+	var key, value *exec.Selector
 	var body et.New
 	var err error
 	if x, err = s.assembleOperand(rangeStmt.X, false); err != nil {

@@ -3,7 +3,7 @@ package plan
 import (
 	"fmt"
 	"github.com/viant/igo/internal/exec/et"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"github.com/viant/xunsafe"
 	"go/ast"
 	"reflect"
@@ -70,7 +70,7 @@ func (s *Scope) compileCallExprAssign(callExpr *ast.CallExpr, dest []*et.Operand
 //	return newFn, retTypes[0], nil
 //}
 
-func (s *Scope) compileCallExprSignature(callExpr *ast.CallExpr) (state.Caller, []*et.Operand, []reflect.Type, error) {
+func (s *Scope) compileCallExprSignature(callExpr *ast.CallExpr) (exec.Caller, []*et.Operand, []reflect.Type, error) {
 	id := stringifyExpr(callExpr.Fun, 0)
 	var ok bool
 	holder, fn, err := s.discoverMethod(id)
@@ -102,7 +102,7 @@ func (s *Scope) compileCallExprSignature(callExpr *ast.CallExpr) (state.Caller, 
 	return aCaller, args, retTypes, nil
 }
 
-func (s *Scope) discoverMethod(id string) (*state.Selector, interface{}, error) {
+func (s *Scope) discoverMethod(id string) (*exec.Selector, interface{}, error) {
 	holder, method, err := s.selectorFun(id)
 	if err != nil || holder == nil {
 		return nil, nil, err
@@ -111,7 +111,7 @@ func (s *Scope) discoverMethod(id string) (*state.Selector, interface{}, error) 
 	return holder, fn, err
 }
 
-func (s *Scope) selectorFun(id string) (*state.Selector, string, error) {
+func (s *Scope) selectorFun(id string) (*exec.Selector, string, error) {
 	pos := strings.LastIndex(id, ".")
 	if pos == -1 {
 		return nil, id, nil
@@ -125,7 +125,7 @@ func (s *Scope) selectorFun(id string) (*state.Selector, string, error) {
 	return sel, fName, nil
 }
 
-func (s *Scope) compileCallArgs(callExpr *ast.CallExpr, holder *state.Selector) ([]*et.Operand, error) {
+func (s *Scope) compileCallArgs(callExpr *ast.CallExpr, holder *exec.Selector) ([]*et.Operand, error) {
 	argLength := len(callExpr.Args)
 	if holder != nil {
 		argLength++
@@ -149,7 +149,7 @@ func (s *Scope) compileCallArgs(callExpr *ast.CallExpr, holder *state.Selector) 
 	return args, nil
 }
 
-func (s *Scope) lookupMethod(sel *state.Selector, name string) (interface{}, error) {
+func (s *Scope) lookupMethod(sel *exec.Selector, name string) (interface{}, error) {
 	method, ok := sel.Type.MethodByName(name)
 	if !ok {
 		return nil, fmt.Errorf("failed to locate %v.%v", sel.Type.String(), name)

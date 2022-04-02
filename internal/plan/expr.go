@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/viant/igo/internal/exec/et"
 	"github.com/viant/igo/internal/exec/expr"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"go/ast"
 	"reflect"
 )
@@ -18,7 +18,7 @@ func (s *Scope) IntExpression(exprStmt string) (*expr.Int, error) {
 	if exprType.Kind() != reflect.Int {
 		return nil, fmt.Errorf("invalid expression type: %v", exprType.String())
 	}
-	variablesNew := state.StateNew(s.mem.Type, *s.selectors)
+	variablesNew := exec.StateNew(s.mem.Type, *s.selectors)
 	compute, err := exprNew(&et.Control{})
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func (s *Scope) BoolExpression(exprStmt string) (*expr.Bool, error) {
 	if exprType.Kind() != reflect.Bool {
 		return nil, fmt.Errorf("invalid expression type: %v", exprType.String())
 	}
-	variablesNew := state.StateNew(s.mem.Type, *s.selectors)
+	variablesNew := exec.StateNew(s.mem.Type, *s.selectors)
 	compute, err := exprNew(&et.Control{})
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func (s *Scope) Float64Expression(exprStmt string) (*expr.Float64, error) {
 	if exprType.Kind() != reflect.Float64 {
 		return nil, fmt.Errorf("invalid expression type: %v", exprType.String())
 	}
-	variablesNew := state.StateNew(s.mem.Type, *s.selectors)
+	variablesNew := exec.StateNew(s.mem.Type, *s.selectors)
 	compute, err := exprNew(&et.Control{})
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func (s *Scope) StringExpression(exprStmt string) (*expr.String, error) {
 	if exprType.Kind() != reflect.String {
 		return nil, fmt.Errorf("invalid expression type: %v", exprType.String())
 	}
-	variablesNew := state.StateNew(s.mem.Type, *s.selectors)
+	variablesNew := exec.StateNew(s.mem.Type, *s.selectors)
 	compute, err := exprNew(&et.Control{})
 	if err != nil {
 		return nil, err

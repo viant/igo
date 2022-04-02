@@ -3,7 +3,7 @@ package et
 import (
 	"fmt"
 	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"github.com/viant/xunsafe"
 	"reflect"
 	"unsafe"
@@ -51,7 +51,7 @@ func NewComposite(cType reflect.Type, operands Operands) New {
 }
 
 type compositeStruct struct {
-	operands  []*state.Operand
+	operands  []*exec.Operand
 	fields    []*xunsafe.Field
 	baseTypes []bool
 	isPtr     bool
@@ -81,7 +81,7 @@ func (c *compositeStruct) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	return structPtr
 }
 
-func newCompositeStruct(operands []*state.Operand, fields []*xunsafe.Field, isPtr bool, cType reflect.Type, baseTypes []bool) *compositeStruct {
+func newCompositeStruct(operands []*exec.Operand, fields []*xunsafe.Field, isPtr bool, cType reflect.Type, baseTypes []bool) *compositeStruct {
 	return &compositeStruct{
 		operands:  operands,
 		fields:    fields,
@@ -100,7 +100,7 @@ func isBaseType(kind reflect.Kind) bool {
 }
 
 type compositeSlice struct {
-	operands            []*state.Operand
+	operands            []*exec.Operand
 	isBaseComponentType bool
 	isComponentPtr      bool
 	isPtr               bool
@@ -108,7 +108,7 @@ type compositeSlice struct {
 	*xunsafe.Type
 }
 
-func newCompositeSlice(sType reflect.Type, operands []*state.Operand) *compositeSlice {
+func newCompositeSlice(sType reflect.Type, operands []*exec.Operand) *compositeSlice {
 	result := &compositeSlice{operands: operands, Type: xunsafe.NewType(sType)}
 	rType := sType
 	if sType.Kind() == reflect.Ptr {

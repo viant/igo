@@ -3,7 +3,7 @@ package et
 import (
 	"fmt"
 	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"go/token"
 	"reflect"
 	"unsafe"
@@ -87,7 +87,7 @@ func newEql(operands Operands, control *Control) (exec.Compute, error) {
 		return nil, err
 	}
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		return cmp.DirectEql, nil
 	default:
 		return cmp.Eql, nil
@@ -100,7 +100,7 @@ func newNeq(operands Operands, control *Control) (exec.Compute, error) {
 		return nil, err
 	}
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		return cmp.DirectNeq, nil
 	default:
 		return cmp.Neq, nil
@@ -109,7 +109,7 @@ func newNeq(operands Operands, control *Control) (exec.Compute, error) {
 
 func newShr(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -131,7 +131,7 @@ func newShr(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 
 func newShl(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -152,7 +152,7 @@ func newShl(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 
 func newAnd(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -178,7 +178,7 @@ func newAnd(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 
 func newAndAssign(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -199,7 +199,7 @@ func newAndAssign(opType reflect.Type, operands Operands, control *Control) (exe
 
 func newOr(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -225,7 +225,7 @@ func newOr(opType reflect.Type, operands Operands, control *Control) (exec.Compu
 
 func newOrAssign(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -246,7 +246,7 @@ func newOrAssign(opType reflect.Type, operands Operands, control *Control) (exec
 
 func newXor(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -267,7 +267,7 @@ func newXor(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 
 func newXorAssign(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -288,7 +288,7 @@ func newXorAssign(opType reflect.Type, operands Operands, control *Control) (exe
 
 func newAndNot(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -309,7 +309,7 @@ func newAndNot(opType reflect.Type, operands Operands, control *Control) (exec.C
 
 func newAndNotAssign(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -330,7 +330,7 @@ func newAndNotAssign(opType reflect.Type, operands Operands, control *Control) (
 
 func newRem(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -351,7 +351,7 @@ func newRem(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 
 func newAdd(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -380,7 +380,7 @@ func newAdd(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 
 func newAddAssign(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -409,7 +409,7 @@ func newAddAssign(opType reflect.Type, operands Operands, control *Control) (exe
 
 func newSub(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -434,7 +434,7 @@ func newSub(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 
 func newSubAssign(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -459,7 +459,7 @@ func newSubAssign(opType reflect.Type, operands Operands, control *Control) (exe
 
 func newMul(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -484,7 +484,7 @@ func newMul(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 
 func newMulAssign(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -509,7 +509,7 @@ func newMulAssign(opType reflect.Type, operands Operands, control *Control) (exe
 
 func newQuo(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -534,7 +534,7 @@ func newQuo(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 
 func newQuoAssign(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -559,7 +559,7 @@ func newQuoAssign(opType reflect.Type, operands Operands, control *Control) (exe
 
 func newGtr(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -584,7 +584,7 @@ func newGtr(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 
 func newLss(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -609,7 +609,7 @@ func newLss(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 
 func newGeq(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -634,7 +634,7 @@ func newGeq(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 
 func newLeq(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
 	switch operands.pathway() {
-	case state.PathwayDirect:
+	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
 		switch opType.Kind() {
 		case reflect.Int:
@@ -658,8 +658,8 @@ func newLeq(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 }
 
 type comparison struct {
-	x *state.Operand
-	y *state.Operand
+	x *exec.Operand
+	y *exec.Operand
 }
 
 func (e *comparison) DirectEql(ptr unsafe.Pointer) unsafe.Pointer {
@@ -721,8 +721,8 @@ func newComparison(operands Operands, control *Control) (*comparison, error) {
 }
 
 type binaryExpr struct {
-	xNode     *state.Operand
-	yNode     *state.Operand
+	xNode     *exec.Operand
+	yNode     *exec.Operand
 	zOffset uintptr
 }
 

@@ -2,12 +2,12 @@ package expr
 
 import (
 	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 )
 
 //Float64 represents float64 result expression
 type Float64 struct {
-	Vars    *state.State
+	Vars    *exec.State
 	compute exec.Compute
 }
 
@@ -17,6 +17,6 @@ func (e *Float64) Compute() float64 {
 }
 
 //NewFloat64 creates a float64 expression
-func NewFloat64(variables *state.State, compute exec.Compute) *Float64 {
+func NewFloat64(variables *exec.State, compute exec.Compute) *Float64 {
 	return &Float64{compute: compute, Vars: variables}
 }

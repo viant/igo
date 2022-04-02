@@ -3,7 +3,7 @@ package et
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"go/token"
 	"reflect"
 	"testing"
@@ -18,7 +18,7 @@ type binaryTestCase struct {
 	token       token.Token
 }
 
-func (c binaryTestCase) init() (*state.State, exec.Compute, error) {
+func (c binaryTestCase) init() (*exec.State, exec.Compute, error) {
 	x := reflect.StructField{
 		Name: "X",
 		Type: reflect.TypeOf(c.left),
@@ -40,7 +40,7 @@ func (c binaryTestCase) init() (*state.State, exec.Compute, error) {
 	destType := reflect.StructOf([]reflect.StructField{
 		x, y, z,
 	})
-	stateNew := state.StateNew(destType, nil)
+	stateNew := exec.StateNew(destType, nil)
 	state := stateNew()
 	xSel, _ := state.Selector("X")
 	ySel, _ := state.Selector("Y")

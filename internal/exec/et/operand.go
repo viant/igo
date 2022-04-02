@@ -2,7 +2,7 @@ package et
 
 import (
 	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"github.com/viant/xunsafe"
 	"reflect"
 	"unsafe"
@@ -12,7 +12,7 @@ import (
 type Operand struct {
 	Key string
 	Idx int
-	*state.Selector
+	*exec.Selector
 	Type     *xunsafe.Type
 	Value    interface{}
 	ValuePtr unsafe.Pointer
@@ -20,7 +20,7 @@ type Operand struct {
 }
 
 //Compute computes operand
-func (o *Operand) Compute(control *Control) (exec.Compute, *state.Selector, error) {
+func (o *Operand) Compute(control *Control) (exec.Compute, *exec.Selector, error) {
 	if o.New != nil {
 		comp, err := o.New(control)
 		return comp, o.Selector, err
@@ -35,25 +35,25 @@ func (o *Operand) Compute(control *Control) (exec.Compute, *state.Selector, erro
 }
 
 //NewOperand create an operand
-func (o *Operand) NewOperand(control *Control) (*state.Operand, error) {
+func (o *Operand) NewOperand(control *Control) (*exec.Operand, error) {
 	var err error
 	offset := o.Offset()
-	if o.Selector != nil && o.Pathway != state.PathwayDirect {
+	if o.Selector != nil && o.Pathway != exec.PathwayDirect {
 		offset = 0
 	}
 	ptr := o.ValuePtr
 	xType := o.Type
 	var compute exec.Compute
-	var selector *state.Selector
+	var selector *exec.Selector
 	if compute, selector, err = o.Compute(control); err != nil {
 		return nil, err
 	}
-	result := state.NewOperand(xType, offset, compute, selector, ptr)
+	result := exec.NewOperand(xType, offset, compute, selector, ptr)
 	return result, result.Validate()
 }
 
 //NewOperand crates a new operand
-func NewOperand(sel *state.Selector, oType reflect.Type, newFn New, value interface{}) *Operand {
+func NewOperand(sel *exec.Selector, oType reflect.Type, newFn New, value interface{}) *Operand {
 	result := &Operand{Selector: sel, New: newFn, Value: value}
 	if oType == nil && sel != nil {
 		oType = sel.Type

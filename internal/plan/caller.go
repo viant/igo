@@ -1,7 +1,7 @@
 package plan
 
 import (
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"github.com/viant/xunsafe"
 	"reflect"
 	"unsafe"
@@ -11,7 +11,7 @@ type caller struct {
 	fn reflect.Value
 }
 
-func (c *caller) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer {
+func (c *caller) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	var params = make([]reflect.Value, len(args))
 	for i := 0; i < len(args); i++ {
 		vPtr := args[i].Compute(ptr)
@@ -58,7 +58,7 @@ func (c *caller) Call(ptr unsafe.Pointer, args []*state.Operand) unsafe.Pointer 
 	panic("too many return parameters")
 }
 
-func newCaller(fn interface{}) state.Caller {
+func newCaller(fn interface{}) exec.Caller {
 	result := &caller{
 		fn: reflect.ValueOf(fn),
 	}

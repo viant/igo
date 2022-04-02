@@ -3,14 +3,14 @@ package et
 import (
 	"fmt"
 	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"github.com/viant/xunsafe"
 	"reflect"
 	"unsafe"
 )
 
 //NewReducer creates reducer
-func NewReducer(x *state.Selector, params []*state.Selector, results []*state.Selector, init *Operand, body New) (New, reflect.Type, error) {
+func NewReducer(x *exec.Selector, params []*exec.Selector, results []*exec.Selector, init *Operand, body New) (New, reflect.Type, error) {
 	if len(results) != 1 {
 		return nil, nil, fmt.Errorf("invalid reducer signaure, expected return %v type", params[0].Type.String())
 	}
@@ -46,13 +46,13 @@ func NewReducer(x *state.Selector, params []*state.Selector, results []*state.Se
 
 type reducer struct {
 	slice          *xunsafe.Slice
-	init           *state.Operand
+	init           *exec.Operand
 	body           exec.Compute
 	retType        reflect.Kind
 	isComponentPtr bool
-	x              *state.Selector
+	x              *exec.Selector
 	accOffset      uintptr
-	value          *state.Selector
+	value          *exec.Selector
 	hasIndex       bool
 	indexOffset    uintptr
 }

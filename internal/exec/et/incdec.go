@@ -2,13 +2,13 @@ package et
 
 import (
 	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"go/token"
 	"unsafe"
 )
 
 type incStmt struct {
-	*state.Operand
+	*exec.Operand
 }
 
 func (s *incStmt) directInc(ptr unsafe.Pointer) unsafe.Pointer {
@@ -42,7 +42,7 @@ func NewIncDec(tok token.Token, op *Operand) New {
 		if err != nil {
 			return nil, err
 		}
-		isDirect := op.Pathway == state.PathwayDirect
+		isDirect := op.Pathway == exec.PathwayDirect
 		stmt := &incStmt{Operand: operand}
 		if tok == token.INC {
 			if isDirect {

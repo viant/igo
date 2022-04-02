@@ -2,13 +2,13 @@ package et
 
 import (
 	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"unsafe"
 )
 
 type callExpr struct {
-	operands []*state.Operand
-	caller   state.Caller
+	operands []*exec.Operand
+	caller   exec.Caller
 }
 
 func (e *callExpr) compute(ptr unsafe.Pointer) unsafe.Pointer {
@@ -16,7 +16,7 @@ func (e *callExpr) compute(ptr unsafe.Pointer) unsafe.Pointer {
 }
 
 //NewCaller crates a caller
-func NewCaller(caller state.Caller, args []*Operand) (New, error) {
+func NewCaller(caller exec.Caller, args []*Operand) (New, error) {
 	expr := &callExpr{caller: caller}
 	operands := Operands(args)
 	return func(control *Control) (exec.Compute, error) {

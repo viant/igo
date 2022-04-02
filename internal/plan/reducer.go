@@ -3,12 +3,12 @@ package plan
 import (
 	"fmt"
 	"github.com/viant/igo/internal/exec/et"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"go/ast"
 	"reflect"
 )
 
-func (s *Scope) compileReducer(holder *state.Selector, expr *ast.CallExpr) (et.New, reflect.Type, error) {
+func (s *Scope) compileReducer(holder *exec.Selector, expr *ast.CallExpr) (et.New, reflect.Type, error) {
 	args := expr.Args
 	if len(args) == 0 {
 		return nil, nil, fmt.Errorf("%v insuficient arguments", stringifyExpr(expr.Fun, 0))

@@ -2,7 +2,7 @@ package plan
 
 import (
 	"github.com/viant/igo/internal/exec/et"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"reflect"
 	"strconv"
 )
@@ -14,12 +14,12 @@ type Scope struct {
 	count     *int
 	upstream  []string
 	prefix    string
-	selectors *[]*state.Selector
+	selectors *[]*exec.Selector
 	index     map[string]uint16
 	types     map[string]reflect.Type
 	funcs     map[string]interface{}
-	out       *[]*state.Selector
-	in        *[]*state.Selector
+	out       *[]*exec.Selector
+	in        *[]*exec.Selector
 	transients *int
 	mem       *memType
 }
@@ -53,11 +53,11 @@ func (s *Scope) subScope() *Scope {
 func NewScope() *Scope {
 	mem := newMemType()
 	mem.addField("flow", reflect.TypeOf(uint64(0)))
-	var selectors = make([]*state.Selector, 0, 3)
+	var selectors = make([]*exec.Selector, 0, 3)
 	count := 0
 	transients := 0
-	var results []*state.Selector
-	var params []*state.Selector
+	var results []*exec.Selector
+	var params []*exec.Selector
 	control := et.Control{}
 	s := &Scope{
 		Control:   &control,

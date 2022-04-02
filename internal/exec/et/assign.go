@@ -3,19 +3,19 @@ package et
 import (
 	"fmt"
 	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"reflect"
 	"unsafe"
 )
 
 //NewCallExprAssign create an assign expression
-func NewCallExprAssign(caller state.Caller, args []*Operand, dest []*Operand) (New, error) {
+func NewCallExprAssign(caller exec.Caller, args []*Operand, dest []*Operand) (New, error) {
 	expr := &callAssign{
 		callExpr: &callExpr{caller: caller},
 	}
 	argOperands := Operands(args)
 	destOperands := Operands(dest)
-	isDirect := destOperands.pathway() == state.PathwayDirect
+	isDirect := destOperands.pathway() == exec.PathwayDirect
 
 	return func(control *Control) (exec.Compute, error) {
 		var err error
@@ -74,7 +74,7 @@ func NewCallExprAssign(caller state.Caller, args []*Operand, dest []*Operand) (N
 func NewAssignExpr(ops ...*Operand) New {
 	operands := Operands(ops)
 	opType := operands[1].Type.Type()
-	isDirect := operands.pathway() == state.PathwayDirect
+	isDirect := operands.pathway() == exec.PathwayDirect
 	return func(exec *Control) (exec.Compute, error) {
 		assignExpr, err := operands.assignExpr(exec)
 		if err != nil {
@@ -116,7 +116,7 @@ func NewAssignExpr(ops ...*Operand) New {
 }
 
 type callAssign struct {
-	dest     []*state.Operand
+	dest     []*exec.Operand
 	offset   uintptr
 	callExpr *callExpr
 }
@@ -235,9 +235,9 @@ func (a *callAssign) computeR6(ptr unsafe.Pointer) unsafe.Pointer {
 }
 
 type assignExpr struct {
-	x       *state.Selector
+	x       *exec.Selector
 	xOffset uintptr
-	y       *state.Operand
+	y       *exec.Operand
 	yOffset uintptr
 }
 

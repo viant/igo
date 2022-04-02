@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/viant/igo/internal/exec"
 	"github.com/viant/igo/internal/exec/et"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"go/ast"
 	"go/parser"
 	"reflect"
@@ -18,14 +18,14 @@ func (s *Scope) Function(expr string) (interface{}, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile: %s, %w", expr, err)
 	}
-	stateNew := state.StateNew(s.mem.Type, *s.selectors)
+	stateNew := exec.StateNew(s.mem.Type, *s.selectors)
 	compute, err := newFn(&et.Control{Flow: s.Flow})
 	if err != nil {
 		return nil, err
 	}
 	execution := exec.NewExecution(compute)
-	execution.In = state.Selectors(*s.in).IDs()
-	execution.Out = state.Selectors(*s.out).IDs()
+	execution.In = exec.Selectors(*s.in).IDs()
+	execution.Out = exec.Selectors(*s.out).IDs()
 	var in, out []reflect.Type
 	for i := range execution.In {
 		in = append(in, (*s.in)[i].Type)
@@ -38,7 +38,7 @@ func (s *Scope) Function(expr string) (interface{}, error) {
 		return stateNew()
 	}}
 	return reflect.MakeFunc(fnType, func(args []reflect.Value) (results []reflect.Value) {
-		state := pool.Get().(*state.State)
+		state := pool.Get().(*exec.State)
 		for i, in := range execution.In {
 			if err := state.SetValue(in, args[i].Interface()); err != nil {
 				panic(err)
@@ -59,19 +59,19 @@ func (s *Scope) Function(expr string) (interface{}, error) {
 }
 
 //Compile parses and compile simple golang expression into execution tree
-func (s *Scope) Compile(expr string) (*exec.Executor, state.New, error) {
+func (s *Scope) Compile(expr string) (*exec.Executor, exec.New, error) {
 	newFn, err := s.compile(expr)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to compile: %s, %w", expr, err)
 	}
-	variablesNew := state.StateNew(s.mem.Type, *s.selectors)
+	variablesNew := exec.StateNew(s.mem.Type, *s.selectors)
 	compute, err := newFn(&et.Control{Flow: s.Flow})
 	if err != nil {
 		return nil, nil, err
 	}
 	result := exec.NewExecution(compute)
-	result.In = state.Selectors(*s.in).IDs()
-	result.Out = state.Selectors(*s.out).IDs()
+	result.In = exec.Selectors(*s.in).IDs()
+	result.Out = exec.Selectors(*s.out).IDs()
 	return result, variablesNew, err
 }
 
@@ -89,7 +89,7 @@ func (s *Scope) compile(expr string) (et.New, error) {
 	return s.compileBlockStmt(fn.Body, false)
 }
 
-func (s *Scope) assignParams(dest *[]*state.Selector, fieldList *ast.FieldList) error {
+func (s *Scope) assignParams(dest *[]*exec.Selector, fieldList *ast.FieldList) error {
 	if fieldList == nil || len(fieldList.List) == 0 {
 		return nil
 	}

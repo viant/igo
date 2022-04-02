@@ -2,7 +2,7 @@ package et
 
 import (
 	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"unsafe"
 )
 
@@ -45,7 +45,7 @@ func NewForStmt(cond *Operand, init, post, body New) (New, error) {
 
 type forStmt struct {
 	init exec.Compute
-	cond *state.Operand
+	cond *exec.Operand
 	body exec.Compute
 	post exec.Compute
 }

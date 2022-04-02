@@ -3,13 +3,13 @@ package et
 import (
 	"fmt"
 	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/state"
+	"github.com/viant/igo/exec"
 	"unsafe"
 )
 
 type returnStmt struct {
-	operands []*state.Operand
-	results  []*state.Selector
+	operands []*exec.Operand
+	results  []*exec.Selector
 }
 
 func (s *returnStmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
@@ -74,7 +74,7 @@ func (s *returnStmt) computeR4(ptr unsafe.Pointer) unsafe.Pointer {
 }
 
 //NewReturnStmt creates a return stmt
-func NewReturnStmt(retOperands Operands, results []*state.Selector) (New, error) {
+func NewReturnStmt(retOperands Operands, results []*exec.Selector) (New, error) {
 	return func(control *Control) (exec.Compute, error) {
 		operands, err := retOperands.operands(control)
 		if err != nil {
