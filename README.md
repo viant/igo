@@ -41,7 +41,7 @@ func usage() {
 	code := "go code here"
 	executor, stateNew, err := scope.Compile(code)
 	if err != nil {
-        panic(err)
+		panic(err)
 	}
 	state := stateNew() //creates memory instance needed by executor 
 	executor.Exec(state)
