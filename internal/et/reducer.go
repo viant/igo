@@ -2,8 +2,8 @@ package et
 
 import (
 	"fmt"
-	"github.com/viant/igo/internal/exec"
 	"github.com/viant/igo/exec"
+	"github.com/viant/igo/internal"
 	"github.com/viant/xunsafe"
 	"reflect"
 	"unsafe"
@@ -18,7 +18,7 @@ func NewReducer(x *exec.Selector, params []*exec.Selector, results []*exec.Selec
 		return nil, nil, fmt.Errorf("invalid reducer signaure, invaid result type, expected: %s, but had: %s", params[0].Type.String(), results[0].Type.String())
 	}
 	destType := params[0].Type
-	return func(control *Control) (exec.Compute, error) {
+	return func(control *Control) (internal.Compute, error) {
 		var err error
 		result := &reducer{x: x, slice: xunsafe.NewSlice(x.Type), retType: destType.Kind()}
 		if init != nil {
@@ -47,7 +47,7 @@ func NewReducer(x *exec.Selector, params []*exec.Selector, results []*exec.Selec
 type reducer struct {
 	slice          *xunsafe.Slice
 	init           *exec.Operand
-	body           exec.Compute
+	body           internal.Compute
 	retType        reflect.Kind
 	isComponentPtr bool
 	x              *exec.Selector

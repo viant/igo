@@ -2,8 +2,8 @@ package plan
 
 import (
 	"fmt"
-	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/internal/exec/et"
+	"github.com/viant/igo/internal"
+	"github.com/viant/igo/internal/et"
 	"go/ast"
 	"reflect"
 	"unsafe"
@@ -24,7 +24,7 @@ func (s *Scope) compileDeclStmt(decl ast.Decl) (et.New, error) {
 				if err := s.defineType(name, spec.Type); err != nil {
 					return nil, err
 				}
-				return func(control *et.Control) (exec.Compute, error) {
+				return func(control *et.Control) (internal.Compute, error) {
 					return func(ptr unsafe.Pointer) unsafe.Pointer {
 						return ptr
 					}, nil

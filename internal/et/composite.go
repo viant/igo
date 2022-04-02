@@ -2,8 +2,8 @@ package et
 
 import (
 	"fmt"
-	"github.com/viant/igo/internal/exec"
 	"github.com/viant/igo/exec"
+	"github.com/viant/igo/internal"
 	"github.com/viant/xunsafe"
 	"reflect"
 	"unsafe"
@@ -17,7 +17,7 @@ func NewComposite(cType reflect.Type, operands Operands) New {
 	}
 	switch rType.Kind() {
 	case reflect.Struct:
-		return func(control *Control) (exec.Compute, error) {
+		return func(control *Control) (internal.Compute, error) {
 			var fields = make([]*xunsafe.Field, len(operands))
 			var baseTypes = make([]bool, len(fields))
 			for i, op := range operands {
@@ -35,7 +35,7 @@ func NewComposite(cType reflect.Type, operands Operands) New {
 			return composite.compute, nil
 		}
 	case reflect.Slice:
-		return func(control *Control) (exec.Compute, error) {
+		return func(control *Control) (internal.Compute, error) {
 			operands, err := operands.operands(control)
 			if err != nil {
 				return nil, err
@@ -45,7 +45,7 @@ func NewComposite(cType reflect.Type, operands Operands) New {
 		}
 	}
 
-	return func(exec *Control) (exec.Compute, error) {
+	return func(exec *Control) (internal.Compute, error) {
 		return nil, fmt.Errorf("composite not yet supported")
 	}
 }

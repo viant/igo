@@ -2,8 +2,8 @@ package plan
 
 import (
 	"fmt"
-	"github.com/viant/igo/internal/exec/et"
 	"github.com/viant/igo/exec"
+	"github.com/viant/igo/internal/et"
 	"go/ast"
 	"reflect"
 )

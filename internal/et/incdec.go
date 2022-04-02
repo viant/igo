@@ -1,8 +1,8 @@
 package et
 
 import (
-	"github.com/viant/igo/internal/exec"
 	"github.com/viant/igo/exec"
+	"github.com/viant/igo/internal"
 	"go/token"
 	"unsafe"
 )
@@ -37,7 +37,7 @@ func (s *incStmt) dec(ptr unsafe.Pointer) unsafe.Pointer {
 
 //NewIncDec creates inc/dec stmt
 func NewIncDec(tok token.Token, op *Operand) New {
-	return func(control *Control) (exec.Compute, error) {
+	return func(control *Control) (internal.Compute, error) {
 		operand, err := op.NewOperand(control)
 		if err != nil {
 			return nil, err

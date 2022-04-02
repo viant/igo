@@ -2,8 +2,8 @@ package plan
 
 import (
 	"fmt"
-	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/internal/exec/et"
+	"github.com/viant/igo/internal"
+	"github.com/viant/igo/internal/et"
 	"go/ast"
 )
 
@@ -20,7 +20,7 @@ func (s *Scope) compileStmt(stmt ast.Stmt) (et.New, error) {
 	case *ast.IfStmt:
 		return s.compileIfStmt(actual)
 	case *ast.ReturnStmt:
-		s.Control.Concat(exec.RtReturn)
+		s.Control.Concat(internal.RtReturn)
 		operands, err := s.assembleOperands(actual.Results, false)
 		if err != nil {
 			return nil, err

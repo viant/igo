@@ -2,8 +2,8 @@ package et
 
 import (
 	"fmt"
-	"github.com/viant/igo/internal/exec"
 	"github.com/viant/igo/exec"
+	"github.com/viant/igo/internal"
 	"reflect"
 	"unsafe"
 )
@@ -17,7 +17,7 @@ func NewCallExprAssign(caller exec.Caller, args []*Operand, dest []*Operand) (Ne
 	destOperands := Operands(dest)
 	isDirect := destOperands.pathway() == exec.PathwayDirect
 
-	return func(control *Control) (exec.Compute, error) {
+	return func(control *Control) (internal.Compute, error) {
 		var err error
 		if expr.dest, err = destOperands.operands(control); err != nil {
 			return nil, err
@@ -75,7 +75,7 @@ func NewAssignExpr(ops ...*Operand) New {
 	operands := Operands(ops)
 	opType := operands[1].Type.Type()
 	isDirect := operands.pathway() == exec.PathwayDirect
-	return func(exec *Control) (exec.Compute, error) {
+	return func(exec *Control) (internal.Compute, error) {
 		assignExpr, err := operands.assignExpr(exec)
 		if err != nil {
 			return nil, err

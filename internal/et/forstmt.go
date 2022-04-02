@@ -1,14 +1,14 @@
 package et
 
 import (
-	"github.com/viant/igo/internal/exec"
 	"github.com/viant/igo/exec"
+	"github.com/viant/igo/internal"
 	"unsafe"
 )
 
 //NewForStmt creates a for stmt
 func NewForStmt(cond *Operand, init, post, body New) (New, error) {
-	return func(control *Control) (exec.Compute, error) {
+	return func(control *Control) (internal.Compute, error) {
 		var err error
 		forKind := 0
 		stmt := &forStmt{}
@@ -44,10 +44,10 @@ func NewForStmt(cond *Operand, init, post, body New) (New, error) {
 }
 
 type forStmt struct {
-	init exec.Compute
+	init internal.Compute
 	cond *exec.Operand
-	body exec.Compute
-	post exec.Compute
+	body internal.Compute
+	post internal.Compute
 }
 
 func (s *forStmt) computeFor(ptr unsafe.Pointer) unsafe.Pointer {
@@ -61,7 +61,7 @@ func (s *forStmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	if s.init != nil {
 		s.init(ptr)
 	}
-	flow := exec.AsFlow(ptr)
+	flow := internal.AsFlow(ptr)
 	for {
 		if s.cond != nil {
 			if !*(*bool)(s.cond.Compute(ptr)) {
@@ -86,130 +86,130 @@ func (s *forStmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 }
 
 type forRorBlock2Stmt struct {
-	s1, s2 exec.Compute
+	s1, s2 internal.Compute
 }
 
 func (b *forRorBlock2Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	r := b.s1(ptr)
-	if exec.AsFlow(ptr).HasBlockControl() {
+	if internal.AsFlow(ptr).HasBlockControl() {
 		return r
 	}
 	return b.s2(ptr)
 }
 
-func newRorBlock2Stmt(s1, s2 exec.Compute) *forRorBlock2Stmt {
+func newRorBlock2Stmt(s1, s2 internal.Compute) *forRorBlock2Stmt {
 	return &forRorBlock2Stmt{s1: s1, s2: s2}
 }
 
 type forRorBlock3Stmt struct {
 	g2 forRorBlock2Stmt
-	s3 exec.Compute
+	s3 internal.Compute
 }
 
 func (b *forRorBlock3Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	r := b.g2.compute(ptr)
-	if exec.AsFlow(ptr).HasBlockControl() {
+	if internal.AsFlow(ptr).HasBlockControl() {
 		return r
 	}
 	return b.s3(ptr)
 }
 
-func newRorBlock3Stmt(s1, s2, s3 exec.Compute) *forRorBlock3Stmt {
+func newRorBlock3Stmt(s1, s2, s3 internal.Compute) *forRorBlock3Stmt {
 	return &forRorBlock3Stmt{g2: *newRorBlock2Stmt(s1, s2), s3: s3}
 }
 
 type forRorBlock4Stmt struct {
 	g3 forRorBlock3Stmt
-	s4 exec.Compute
+	s4 internal.Compute
 }
 
 func (b *forRorBlock4Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	r := b.g3.compute(ptr)
-	if exec.AsFlow(ptr).HasBlockControl() {
+	if internal.AsFlow(ptr).HasBlockControl() {
 		return r
 	}
 	return b.s4(ptr)
 }
 
-func newRorBlock4Stmt(s1, s2, s3, s4 exec.Compute) *forRorBlock4Stmt {
+func newRorBlock4Stmt(s1, s2, s3, s4 internal.Compute) *forRorBlock4Stmt {
 	return &forRorBlock4Stmt{g3: *newRorBlock3Stmt(s1, s2, s3), s4: s4}
 }
 
 type forRorBlock5Stmt struct {
 	g4 forRorBlock4Stmt
-	s5 exec.Compute
+	s5 internal.Compute
 }
 
 func (b *forRorBlock5Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	r := b.g4.compute(ptr)
-	if exec.AsFlow(ptr).HasBlockControl() {
+	if internal.AsFlow(ptr).HasBlockControl() {
 		return r
 	}
 	return b.s5(ptr)
 }
 
-func newRorBlock5Stmt(s1, s2, s3, s4, s5 exec.Compute) *forRorBlock5Stmt {
+func newRorBlock5Stmt(s1, s2, s3, s4, s5 internal.Compute) *forRorBlock5Stmt {
 	return &forRorBlock5Stmt{g4: *newRorBlock4Stmt(s1, s2, s3, s4), s5: s5}
 }
 
 type forRorBlock6Stmt struct {
 	g5 forRorBlock5Stmt
-	s6 exec.Compute
+	s6 internal.Compute
 }
 
 func (b *forRorBlock6Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	r := b.g5.compute(ptr)
-	if exec.AsFlow(ptr).HasBlockControl() {
+	if internal.AsFlow(ptr).HasBlockControl() {
 		return r
 	}
 	return b.s6(ptr)
 }
 
-func newRorBlock6Stmt(s1, s2, s3, s4, s5, s6 exec.Compute) *forRorBlock6Stmt {
+func newRorBlock6Stmt(s1, s2, s3, s4, s5, s6 internal.Compute) *forRorBlock6Stmt {
 	return &forRorBlock6Stmt{g5: *newRorBlock5Stmt(s1, s2, s3, s4, s5), s6: s6}
 }
 
 type forRorBlock7Stmt struct {
 	g6 forRorBlock6Stmt
-	s7 exec.Compute
+	s7 internal.Compute
 }
 
 func (b *forRorBlock7Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	r := b.g6.compute(ptr)
-	if exec.AsFlow(ptr).HasBlockControl() {
+	if internal.AsFlow(ptr).HasBlockControl() {
 		return r
 	}
 	return b.s7(ptr)
 }
 
-func newRorBlock7Stmt(s1, s2, s3, s4, s5, s6, s7 exec.Compute) *forRorBlock7Stmt {
+func newRorBlock7Stmt(s1, s2, s3, s4, s5, s6, s7 internal.Compute) *forRorBlock7Stmt {
 	return &forRorBlock7Stmt{g6: *newRorBlock6Stmt(s1, s2, s3, s4, s5, s6), s7: s7}
 }
 
 type forRorBlock8Stmt struct {
 	g7 forRorBlock7Stmt
-	s8 exec.Compute
+	s8 internal.Compute
 }
 
 func (b *forRorBlock8Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	r := b.g7.compute(ptr)
-	if exec.AsFlow(ptr).HasBlockControl() {
+	if internal.AsFlow(ptr).HasBlockControl() {
 		return r
 	}
 	return b.s8(ptr)
 }
 
-func newRorBlock8Stmt(s1, s2, s3, s4, s5, s6, s7, s8 exec.Compute) *forRorBlock8Stmt {
+func newRorBlock8Stmt(s1, s2, s3, s4, s5, s6, s7, s8 internal.Compute) *forRorBlock8Stmt {
 	return &forRorBlock8Stmt{g7: *newRorBlock7Stmt(s1, s2, s3, s4, s5, s6, s7), s8: s8}
 }
 
 type forRorBlockStmt struct {
-	statements []exec.Compute
+	statements []internal.Compute
 }
 
 func (b *forRorBlockStmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	var result unsafe.Pointer
-	flow := exec.AsFlow(ptr)
+	flow := internal.AsFlow(ptr)
 	for _, stmt := range b.statements {
 		result = stmt(ptr)
 		if flow.HasBlockControl() {
@@ -219,7 +219,7 @@ func (b *forRorBlockStmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	return result
 }
 
-func newForBlockStmt(stmts []exec.Compute) exec.Compute {
+func newForBlockStmt(stmts []internal.Compute) internal.Compute {
 	switch len(stmts) {
 	case 0:
 		return nop

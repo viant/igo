@@ -1,7 +1,7 @@
 package et
 
 import (
-	"github.com/viant/igo/internal/exec"
+	"github.com/viant/igo/internal"
 	"unsafe"
 )
 
@@ -10,7 +10,7 @@ func nop(ptr unsafe.Pointer) unsafe.Pointer {
 }
 
 type group2Stmt struct {
-	s1, s2 exec.Compute
+	s1, s2 internal.Compute
 }
 
 func (b *group2Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
@@ -18,13 +18,13 @@ func (b *group2Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	return b.s2(ptr)
 }
 
-func newGroup2Stmt(s1, s2 exec.Compute) *group2Stmt {
+func newGroup2Stmt(s1, s2 internal.Compute) *group2Stmt {
 	return &group2Stmt{s1: s1, s2: s2}
 }
 
 type group3Stmt struct {
 	g2 group2Stmt
-	s3 exec.Compute
+	s3 internal.Compute
 }
 
 func (b *group3Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
@@ -32,13 +32,13 @@ func (b *group3Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	return b.s3(ptr)
 }
 
-func newGroup3Stmt(s1, s2, s3 exec.Compute) *group3Stmt {
+func newGroup3Stmt(s1, s2, s3 internal.Compute) *group3Stmt {
 	return &group3Stmt{g2: *newGroup2Stmt(s1, s2), s3: s3}
 }
 
 type group4Stmt struct {
 	g3 group3Stmt
-	s4 exec.Compute
+	s4 internal.Compute
 }
 
 func (b *group4Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
@@ -46,13 +46,13 @@ func (b *group4Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	return b.s4(ptr)
 }
 
-func newGroup4Stmt(s1, s2, s3, s4 exec.Compute) *group4Stmt {
+func newGroup4Stmt(s1, s2, s3, s4 internal.Compute) *group4Stmt {
 	return &group4Stmt{g3: *newGroup3Stmt(s1, s2, s3), s4: s4}
 }
 
 type group5Stmt struct {
 	g4 group4Stmt
-	s5 exec.Compute
+	s5 internal.Compute
 }
 
 func (b *group5Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
@@ -60,13 +60,13 @@ func (b *group5Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	return b.s5(ptr)
 }
 
-func newGroup5Stmt(s1, s2, s3, s4, s5 exec.Compute) *group5Stmt {
+func newGroup5Stmt(s1, s2, s3, s4, s5 internal.Compute) *group5Stmt {
 	return &group5Stmt{g4: *newGroup4Stmt(s1, s2, s3, s4), s5: s5}
 }
 
 type group6Stmt struct {
 	g5 group5Stmt
-	s6 exec.Compute
+	s6 internal.Compute
 }
 
 func (b *group6Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
@@ -74,13 +74,13 @@ func (b *group6Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	return b.s6(ptr)
 }
 
-func newGroup6Stmt(s1, s2, s3, s4, s5, s6 exec.Compute) *group6Stmt {
+func newGroup6Stmt(s1, s2, s3, s4, s5, s6 internal.Compute) *group6Stmt {
 	return &group6Stmt{g5: *newGroup5Stmt(s1, s2, s3, s4, s5), s6: s6}
 }
 
 type group7Stmt struct {
 	g6 group6Stmt
-	s7 exec.Compute
+	s7 internal.Compute
 }
 
 func (b *group7Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
@@ -88,13 +88,13 @@ func (b *group7Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	return b.s7(ptr)
 }
 
-func newGroup7Stmt(s1, s2, s3, s4, s5, s6, s7 exec.Compute) *group7Stmt {
+func newGroup7Stmt(s1, s2, s3, s4, s5, s6, s7 internal.Compute) *group7Stmt {
 	return &group7Stmt{g6: *newGroup6Stmt(s1, s2, s3, s4, s5, s6), s7: s7}
 }
 
 type group8Stmt struct {
 	g7 group7Stmt
-	s8 exec.Compute
+	s8 internal.Compute
 }
 
 func (b *group8Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
@@ -102,12 +102,12 @@ func (b *group8Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	return b.s8(ptr)
 }
 
-func newGroup8Stmt(s1, s2, s3, s4, s5, s6, s7, s8 exec.Compute) *group8Stmt {
+func newGroup8Stmt(s1, s2, s3, s4, s5, s6, s7, s8 internal.Compute) *group8Stmt {
 	return &group8Stmt{g7: *newGroup7Stmt(s1, s2, s3, s4, s5, s6, s7), s8: s8}
 }
 
 type groupStmt struct {
-	statements []exec.Compute
+	statements []internal.Compute
 }
 
 func (b *groupStmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
@@ -120,8 +120,8 @@ func (b *groupStmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 
 //NewGroupStmt crates group node
 func NewGroupStmt(newStatementsFn []New, stmt bool) New {
-	return func(control *Control) (exec.Compute, error) {
-		var stmts = make([]exec.Compute, len(newStatementsFn))
+	return func(control *Control) (internal.Compute, error) {
+		var stmts = make([]internal.Compute, len(newStatementsFn))
 		var err error
 		for i := range newStatementsFn {
 			newFn := newStatementsFn[i]
@@ -133,7 +133,7 @@ func NewGroupStmt(newStatementsFn []New, stmt bool) New {
 	}
 }
 
-func newGroupStmt(stmts []exec.Compute) exec.Compute {
+func newGroupStmt(stmts []internal.Compute) internal.Compute {
 	switch len(stmts) {
 	case 0:
 		return nop

@@ -1,15 +1,15 @@
 package et
 
 import (
-	"github.com/viant/igo/internal/exec"
 	"github.com/viant/igo/exec"
+	"github.com/viant/igo/internal"
 	"unsafe"
 )
 
 type ifElseStmt struct {
 	cond       *exec.Operand
-	whenBranch exec.Compute
-	elseBranch exec.Compute
+	whenBranch internal.Compute
+	elseBranch internal.Compute
 }
 
 func (s *ifElseStmt) computeIf(ptr unsafe.Pointer) unsafe.Pointer {
@@ -28,7 +28,7 @@ func (s *ifElseStmt) computeIfElse(ptr unsafe.Pointer) unsafe.Pointer {
 
 //NewIfStmt creates if stmt
 func NewIfStmt(cond *Operand, whenBranch, elseBranch New) (New, error) {
-	return func(control *Control) (exec.Compute, error) {
+	return func(control *Control) (internal.Compute, error) {
 		var err error
 		result := &ifElseStmt{}
 		if result.cond, err = cond.NewOperand(control); err != nil {

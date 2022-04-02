@@ -1,8 +1,8 @@
 package et
 
 import (
-	"github.com/viant/igo/internal/exec"
 	"github.com/viant/igo/exec"
+	"github.com/viant/igo/internal"
 	"github.com/viant/xunsafe"
 	"reflect"
 	"unsafe"
@@ -20,7 +20,7 @@ type Operand struct {
 }
 
 //Compute computes operand
-func (o *Operand) Compute(control *Control) (exec.Compute, *exec.Selector, error) {
+func (o *Operand) Compute(control *Control) (internal.Compute, *exec.Selector, error) {
 	if o.New != nil {
 		comp, err := o.New(control)
 		return comp, o.Selector, err
@@ -43,7 +43,7 @@ func (o *Operand) NewOperand(control *Control) (*exec.Operand, error) {
 	}
 	ptr := o.ValuePtr
 	xType := o.Type
-	var compute exec.Compute
+	var compute internal.Compute
 	var selector *exec.Selector
 	if compute, selector, err = o.Compute(control); err != nil {
 		return nil, err

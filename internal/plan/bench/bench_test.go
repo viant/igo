@@ -1,20 +1,20 @@
 package bench
 
-
 import (
 	"github.com/maja42/goval"
 	"github.com/stretchr/testify/assert"
 	"github.com/traefik/yaegi/interp"
-	"github.com/viant/igo/internal/exec"
-	"github.com/viant/igo/internal/exec/expr"
-	"github.com/viant/igo/internal/plan"
 	"github.com/viant/igo/exec"
+	"github.com/viant/igo/internal"
+	"github.com/viant/igo/internal/exec"
+	"github.com/viant/igo/internal/expr"
+	"github.com/viant/igo/internal/plan"
 	"github.com/xtaci/goeval"
 	"reflect"
 	"testing"
 )
 
-var benchExecution *exec.Executor
+var benchExecution *internal.Executor
 var benchVars *exec.State
 var benchNative = func() int {
 	z := 0
@@ -124,7 +124,7 @@ func Benchmark_Loop_Igo(b *testing.B) {
 	}
 }
 
-var benchLoopIgo *exec.Executor
+var benchLoopIgo *internal.Executor
 var benchLoopIgoVars *exec.State
 
 func initLoopIgo() {
@@ -144,12 +144,10 @@ print(count)
 	benchLoopIgoVars = stateNew()
 }
 
-
-
-
 var benchIntNativeExpr func(x, y, z int) int
 var benchIntExpr *expr.Int
 var intType = reflect.TypeOf(0)
+
 func initIntExpressionBench() {
 
 	var err error
@@ -171,9 +169,9 @@ func initIntExpressionBench() {
 func BenchmarkScope_IntExpression(b *testing.B) {
 	initIntExpressionBench()
 	k := 0
-	benchIntExpr.Vars.SetInt("x", 10)
-	benchIntExpr.Vars.SetInt("y", 20)
-	benchIntExpr.Vars.SetInt("z", 30)
+	benchIntExpr.State.SetInt("x", 10)
+	benchIntExpr.State.SetInt("y", 20)
+	benchIntExpr.State.SetInt("z", 30)
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {

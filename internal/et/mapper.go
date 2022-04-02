@@ -1,8 +1,8 @@
 package et
 
 import (
-	"github.com/viant/igo/internal/exec"
 	"github.com/viant/igo/exec"
+	"github.com/viant/igo/internal"
 	"github.com/viant/xunsafe"
 	"reflect"
 	"unsafe"
@@ -12,7 +12,7 @@ import (
 func NewMapper(x *exec.Selector, params []*exec.Selector, results []*exec.Selector, body New) (New, reflect.Type, error) {
 	destType := results[0].Type
 	destSliceType := reflect.SliceOf(destType)
-	return func(control *Control) (exec.Compute, error) {
+	return func(control *Control) (internal.Compute, error) {
 		var err error
 		result := &mapper{x: x, srcSlice: xunsafe.NewSlice(x.Type), destSlice: xunsafe.NewSlice(destSliceType)}
 		if result.body, err = body(control); err != nil {
@@ -33,7 +33,7 @@ func NewMapper(x *exec.Selector, params []*exec.Selector, results []*exec.Select
 type mapper struct {
 	srcSlice       *xunsafe.Slice
 	destSlice      *xunsafe.Slice
-	body           exec.Compute
+	body           internal.Compute
 	isComponentPtr bool
 	xElemType      *xunsafe.Type
 	derefElem      bool

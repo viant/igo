@@ -2,8 +2,8 @@ package et
 
 import (
 	"fmt"
-	"github.com/viant/igo/internal/exec"
 	"github.com/viant/igo/exec"
+	"github.com/viant/igo/internal"
 	"github.com/viant/xunsafe"
 	"reflect"
 	"unsafe"
@@ -34,7 +34,7 @@ func NewMake(destType reflect.Type, args Operands) (New, reflect.Type, error) {
 	default:
 		return nil, nil, fmt.Errorf("invalid make type: %v", destType.String())
 	}
-	return func(control *Control) (exec.Compute, error) {
+	return func(control *Control) (internal.Compute, error) {
 		operands, err := args.operands(control)
 		if err != nil {
 			return nil, err

@@ -2,7 +2,7 @@ package plan
 
 import (
 	"fmt"
-	"github.com/viant/igo/internal/exec/et"
+	"github.com/viant/igo/internal/et"
 	"github.com/viant/xunsafe"
 	"go/ast"
 	"reflect"

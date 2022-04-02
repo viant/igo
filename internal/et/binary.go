@@ -2,8 +2,8 @@ package et
 
 import (
 	"fmt"
-	"github.com/viant/igo/internal/exec"
 	"github.com/viant/igo/exec"
+	"github.com/viant/igo/internal"
 	"go/token"
 	"reflect"
 	"unsafe"
@@ -24,7 +24,7 @@ func NewBinaryExpr(op token.Token, operands ...*Operand) (New, reflect.Type) {
 	}
 	assignToken := op
 
-	return func(exec *Control) (exec.Compute, error) {
+	return func(exec *Control) (internal.Compute, error) {
 		switch assignToken {
 		case token.REM:
 			return newRem(opType, operands, exec)
@@ -81,7 +81,7 @@ func NewBinaryExpr(op token.Token, operands ...*Operand) (New, reflect.Type) {
 	}, destType
 }
 
-func newEql(operands Operands, control *Control) (exec.Compute, error) {
+func newEql(operands Operands, control *Control) (internal.Compute, error) {
 	cmp, err := newComparison(operands, control)
 	if err != nil {
 		return nil, err
@@ -94,7 +94,7 @@ func newEql(operands Operands, control *Control) (exec.Compute, error) {
 	}
 }
 
-func newNeq(operands Operands, control *Control) (exec.Compute, error) {
+func newNeq(operands Operands, control *Control) (internal.Compute, error) {
 	cmp, err := newComparison(operands, control)
 	if err != nil {
 		return nil, err
@@ -107,7 +107,7 @@ func newNeq(operands Operands, control *Control) (exec.Compute, error) {
 	}
 }
 
-func newShr(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newShr(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -129,7 +129,7 @@ func newShr(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 
 }
 
-func newShl(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newShl(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -150,7 +150,7 @@ func newShl(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 	return Unsupported(fmt.Sprintf("unsupported  %v << %v", opType.Name(), opType.Name()))
 }
 
-func newAnd(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newAnd(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -176,7 +176,7 @@ func newAnd(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 	return Unsupported(fmt.Sprintf("unsupported  %v & %v", opType.Name(), opType.Name()))
 }
 
-func newAndAssign(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newAndAssign(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -197,7 +197,7 @@ func newAndAssign(opType reflect.Type, operands Operands, control *Control) (exe
 	return Unsupported(fmt.Sprintf("unsupported  %v & %v", opType.Name(), opType.Name()))
 }
 
-func newOr(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newOr(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -223,7 +223,7 @@ func newOr(opType reflect.Type, operands Operands, control *Control) (exec.Compu
 	return Unsupported(fmt.Sprintf("unsupported  %v | %v", opType.Name(), opType.Name()))
 }
 
-func newOrAssign(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newOrAssign(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -244,7 +244,7 @@ func newOrAssign(opType reflect.Type, operands Operands, control *Control) (exec
 	return Unsupported(fmt.Sprintf("unsupported  %v | %v", opType.Name(), opType.Name()))
 }
 
-func newXor(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newXor(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -265,7 +265,7 @@ func newXor(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 	return Unsupported(fmt.Sprintf("unsupported  %v ^ %v", opType.Name(), opType.Name()))
 }
 
-func newXorAssign(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newXorAssign(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -286,7 +286,7 @@ func newXorAssign(opType reflect.Type, operands Operands, control *Control) (exe
 	return Unsupported(fmt.Sprintf("unsupported  %v ^ %v", opType.Name(), opType.Name()))
 }
 
-func newAndNot(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newAndNot(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -307,7 +307,7 @@ func newAndNot(opType reflect.Type, operands Operands, control *Control) (exec.C
 	return Unsupported(fmt.Sprintf("unsupported  %v &^ %v", opType.Name(), opType.Name()))
 }
 
-func newAndNotAssign(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newAndNotAssign(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -328,7 +328,7 @@ func newAndNotAssign(opType reflect.Type, operands Operands, control *Control) (
 	return Unsupported(fmt.Sprintf("unsupported  %v &^ %v", opType.Name(), opType.Name()))
 }
 
-func newRem(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newRem(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -349,7 +349,7 @@ func newRem(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 	return Unsupported(fmt.Sprintf("unsupported  %v + %v", opType.Name(), opType.Name()))
 }
 
-func newAdd(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newAdd(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -378,7 +378,7 @@ func newAdd(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 	return Unsupported(fmt.Sprintf("unsupported  %v + %v", opType.Name(), opType.Name()))
 }
 
-func newAddAssign(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newAddAssign(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -407,7 +407,7 @@ func newAddAssign(opType reflect.Type, operands Operands, control *Control) (exe
 	return Unsupported(fmt.Sprintf("unsupported  %v + %v", opType.Name(), opType.Name()))
 }
 
-func newSub(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newSub(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -432,7 +432,7 @@ func newSub(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 	return Unsupported(fmt.Sprintf("unsupported  %v - %v p:%v", opType.Name(), opType.Name(), operands.pathway()))
 }
 
-func newSubAssign(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newSubAssign(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -457,7 +457,7 @@ func newSubAssign(opType reflect.Type, operands Operands, control *Control) (exe
 	return Unsupported(fmt.Sprintf("unsupported  %v - %v p:%v", opType.Name(), opType.Name(), operands.pathway()))
 }
 
-func newMul(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newMul(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -482,7 +482,7 @@ func newMul(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 	return Unsupported(fmt.Sprintf("unsupported  %v * %v", opType.Name(), opType.Name()))
 }
 
-func newMulAssign(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newMulAssign(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -507,7 +507,7 @@ func newMulAssign(opType reflect.Type, operands Operands, control *Control) (exe
 	return Unsupported(fmt.Sprintf("unsupported  %v * %v", opType.Name(), opType.Name()))
 }
 
-func newQuo(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newQuo(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -532,7 +532,7 @@ func newQuo(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 	return Unsupported(fmt.Sprintf("unsupported  %v * %v", opType.Name(), opType.Name()))
 }
 
-func newQuoAssign(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newQuoAssign(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -557,7 +557,7 @@ func newQuoAssign(opType reflect.Type, operands Operands, control *Control) (exe
 	return Unsupported(fmt.Sprintf("unsupported  %v * %v", opType.Name(), opType.Name()))
 }
 
-func newGtr(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newGtr(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -582,7 +582,7 @@ func newGtr(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 	return Unsupported(fmt.Sprintf("unsupported  %v * %v", opType.Name(), opType.Name()))
 }
 
-func newLss(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newLss(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -607,7 +607,7 @@ func newLss(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 	return Unsupported(fmt.Sprintf("unsupported  %v * %v", opType.Name(), opType.Name()))
 }
 
-func newGeq(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newGeq(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -632,7 +632,7 @@ func newGeq(opType reflect.Type, operands Operands, control *Control) (exec.Comp
 	return Unsupported(fmt.Sprintf("unsupported  %v * %v", opType.Name(), opType.Name()))
 }
 
-func newLeq(opType reflect.Type, operands Operands, control *Control) (exec.Compute, error) {
+func newLeq(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -721,8 +721,8 @@ func newComparison(operands Operands, control *Control) (*comparison, error) {
 }
 
 type binaryExpr struct {
-	xNode     *exec.Operand
-	yNode     *exec.Operand
+	xNode   *exec.Operand
+	yNode   *exec.Operand
 	zOffset uintptr
 }
 
@@ -989,8 +989,8 @@ func (e *binaryExpr) or(ptr unsafe.Pointer) unsafe.Pointer {
 }
 
 type directBinaryExpr struct {
-	xOffset   uintptr
-	yOffset   uintptr
+	xOffset uintptr
+	yOffset uintptr
 	zOffset uintptr
 }
 

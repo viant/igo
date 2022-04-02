@@ -1,4 +1,4 @@
-package exec
+package internal
 
 import (
 	"unsafe"

@@ -32,8 +32,8 @@ func ExampleScope_BoolExpression() {
 	}
 	var eval = make([]bool, len(perfs))
 	for i := range perfs {
-		_ = expr.Vars.SetValue("perf", perfs[i])
-		_ = expr.Vars.SetFloat64("threshold", 0.7)
+		_ = expr.State.SetValue("perf", perfs[i])
+		_ = expr.State.SetFloat64("threshold", 0.7)
 		eval[i] = expr.Compute()
 	}
 }

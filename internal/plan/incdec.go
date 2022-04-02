@@ -1,7 +1,7 @@
 package plan
 
 import (
-	"github.com/viant/igo/internal/exec/et"
+	"github.com/viant/igo/internal/et"
 	"go/ast"
 )
 

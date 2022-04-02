@@ -1,8 +1,8 @@
 package et
 
 import (
-	"github.com/viant/igo/internal/exec"
 	"github.com/viant/igo/exec"
+	"github.com/viant/igo/internal"
 	"unsafe"
 )
 
@@ -19,7 +19,7 @@ func (e *callExpr) compute(ptr unsafe.Pointer) unsafe.Pointer {
 func NewCaller(caller exec.Caller, args []*Operand) (New, error) {
 	expr := &callExpr{caller: caller}
 	operands := Operands(args)
-	return func(control *Control) (exec.Compute, error) {
+	return func(control *Control) (internal.Compute, error) {
 		var err error
 		if expr.operands, err = operands.operands(control); err != nil {
 			return nil, err

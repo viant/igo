@@ -1,8 +1,8 @@
 package et
 
 import (
-	"github.com/viant/igo/internal/exec"
 	"github.com/viant/igo/exec"
+	"github.com/viant/igo/internal"
 	"github.com/viant/xunsafe"
 	"reflect"
 	"unsafe"
@@ -10,7 +10,7 @@ import (
 
 type rangeStmt struct {
 	slice          *xunsafe.Slice
-	body           exec.Compute
+	body           internal.Compute
 	isComponentPtr bool
 	x              *exec.Operand
 	key            *exec.Selector
@@ -36,7 +36,7 @@ func (s *rangeStmt) computeRange(ptr unsafe.Pointer) unsafe.Pointer {
 
 //NewRange creates a range stmt
 func NewRange(x *Operand, key, value *exec.Selector, body New) (New, error) {
-	return func(control *Control) (exec.Compute, error) {
+	return func(control *Control) (internal.Compute, error) {
 		var err error
 		sliceType := x.Selector.Type
 		if sliceType.Kind() == reflect.Ptr {

@@ -2,8 +2,8 @@ package et
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/viant/igo/internal/exec"
 	"github.com/viant/igo/exec"
+	"github.com/viant/igo/internal"
 	"go/token"
 	"reflect"
 	"testing"
@@ -18,7 +18,7 @@ type binaryTestCase struct {
 	token       token.Token
 }
 
-func (c binaryTestCase) init() (*exec.State, exec.Compute, error) {
+func (c binaryTestCase) init() (*exec.State, internal.Compute, error) {
 	x := reflect.StructField{
 		Name: "X",
 		Type: reflect.TypeOf(c.left),

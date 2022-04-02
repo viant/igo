@@ -2,7 +2,7 @@ package et
 
 import (
 	"fmt"
-	"github.com/viant/igo/internal/exec"
+	"github.com/viant/igo/internal"
 	"go/ast"
 	"go/token"
 	"unsafe"
@@ -10,17 +10,17 @@ import (
 
 //NewBranchStmt create branch statment
 func NewBranchStmt(tkn token.Token, label *ast.Ident) (New, error) {
-	return func(control *Control) (exec.Compute, error) {
+	return func(control *Control) (internal.Compute, error) {
 		switch tkn {
 		case token.BREAK:
 			return func(ptr unsafe.Pointer) unsafe.Pointer {
-				*(*exec.Flow)(ptr) |= exec.RtBreak
+				*(*internal.Flow)(ptr) |= internal.RtBreak
 				return nil
 			}, nil
 
 		case token.CONTINUE:
 			return func(ptr unsafe.Pointer) unsafe.Pointer {
-				*(*exec.Flow)(ptr) |= exec.RtContinue
+				*(*internal.Flow)(ptr) |= internal.RtContinue
 				return nil
 			}, nil
 		}

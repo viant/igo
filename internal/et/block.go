@@ -1,138 +1,138 @@
 package et
 
 import (
-	"github.com/viant/igo/internal/exec"
+	"github.com/viant/igo/internal"
 	"unsafe"
 )
 
 type block2Stmt struct {
-	s1, s2 exec.Compute
+	s1, s2 internal.Compute
 }
 
 func (b *block2Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	r := b.s1(ptr)
-	if exec.AsFlow(ptr).HasReturn() {
+	if internal.AsFlow(ptr).HasReturn() {
 		return r
 	}
 	return b.s2(ptr)
 }
 
-func newBlock2Stmt(s1, s2 exec.Compute) *block2Stmt {
+func newBlock2Stmt(s1, s2 internal.Compute) *block2Stmt {
 	return &block2Stmt{s1: s1, s2: s2}
 }
 
 type block3Stmt struct {
 	g2 block2Stmt
-	s3 exec.Compute
+	s3 internal.Compute
 }
 
 func (b *block3Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	r := b.g2.compute(ptr)
-	if exec.AsFlow(ptr).HasReturn() {
+	if internal.AsFlow(ptr).HasReturn() {
 		return r
 	}
 	return b.s3(ptr)
 }
 
-func newBlock3Stmt(s1, s2, s3 exec.Compute) *block3Stmt {
+func newBlock3Stmt(s1, s2, s3 internal.Compute) *block3Stmt {
 	return &block3Stmt{g2: *newBlock2Stmt(s1, s2), s3: s3}
 }
 
 type block4Stmt struct {
 	g3 block3Stmt
-	s4 exec.Compute
+	s4 internal.Compute
 }
 
 func (b *block4Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	r := b.g3.compute(ptr)
-	if exec.AsFlow(ptr).HasReturn() {
+	if internal.AsFlow(ptr).HasReturn() {
 		return r
 	}
 	return b.s4(ptr)
 }
 
-func newBlock4Stmt(s1, s2, s3, s4 exec.Compute) *block4Stmt {
+func newBlock4Stmt(s1, s2, s3, s4 internal.Compute) *block4Stmt {
 	return &block4Stmt{g3: *newBlock3Stmt(s1, s2, s3), s4: s4}
 }
 
 type block5Stmt struct {
 	g4 block4Stmt
-	s5 exec.Compute
+	s5 internal.Compute
 }
 
 func (b *block5Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	r := b.g4.compute(ptr)
-	if exec.AsFlow(ptr).HasReturn() {
+	if internal.AsFlow(ptr).HasReturn() {
 		return r
 	}
 	return b.s5(ptr)
 }
 
-func newBlock5Stmt(s1, s2, s3, s4, s5 exec.Compute) *block5Stmt {
+func newBlock5Stmt(s1, s2, s3, s4, s5 internal.Compute) *block5Stmt {
 	return &block5Stmt{g4: *newBlock4Stmt(s1, s2, s3, s4), s5: s5}
 }
 
 type block6Stmt struct {
 	g5 block5Stmt
-	s6 exec.Compute
+	s6 internal.Compute
 }
 
 func (b *block6Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	r := b.g5.compute(ptr)
-	if exec.AsFlow(ptr).HasReturn() {
+	if internal.AsFlow(ptr).HasReturn() {
 		return r
 	}
 	return b.s6(ptr)
 }
 
-func newBlock6Stmt(s1, s2, s3, s4, s5, s6 exec.Compute) *block6Stmt {
+func newBlock6Stmt(s1, s2, s3, s4, s5, s6 internal.Compute) *block6Stmt {
 	return &block6Stmt{g5: *newBlock5Stmt(s1, s2, s3, s4, s5), s6: s6}
 }
 
 type block7Stmt struct {
 	g6 block6Stmt
-	s7 exec.Compute
+	s7 internal.Compute
 }
 
 func (b *block7Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	r := b.g6.compute(ptr)
-	if exec.AsFlow(ptr).HasReturn() {
+	if internal.AsFlow(ptr).HasReturn() {
 		return r
 	}
 	return b.s7(ptr)
 }
 
-func newBlock7Stmt(s1, s2, s3, s4, s5, s6, s7 exec.Compute) *block7Stmt {
+func newBlock7Stmt(s1, s2, s3, s4, s5, s6, s7 internal.Compute) *block7Stmt {
 	return &block7Stmt{g6: *newBlock6Stmt(s1, s2, s3, s4, s5, s6), s7: s7}
 }
 
 type block8Stmt struct {
 	g7 block7Stmt
-	s8 exec.Compute
+	s8 internal.Compute
 }
 
 func (b *block8Stmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	r := b.g7.compute(ptr)
-	if exec.AsFlow(ptr).HasReturn() {
+	if internal.AsFlow(ptr).HasReturn() {
 		return r
 	}
 
 	return b.s8(ptr)
 }
 
-func newBlock8Stmt(s1, s2, s3, s4, s5, s6, s7, s8 exec.Compute) *block8Stmt {
+func newBlock8Stmt(s1, s2, s3, s4, s5, s6, s7, s8 internal.Compute) *block8Stmt {
 	return &block8Stmt{g7: *newBlock7Stmt(s1, s2, s3, s4, s5, s6, s7), s8: s8}
 }
 
 type blockStmt struct {
-	statements []exec.Compute
+	statements []internal.Compute
 }
 
 func (b *blockStmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	var result unsafe.Pointer
 	for _, stmt := range b.statements {
 		result = stmt(ptr)
-		if exec.AsFlow(ptr).HasReturn() {
+		if internal.AsFlow(ptr).HasReturn() {
 			return result
 		}
 	}
@@ -141,8 +141,8 @@ func (b *blockStmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 
 //NewBlockStmt crates block node
 func NewBlockStmt(newStatementsFn []New, forStmt bool) New {
-	return func(control *Control) (exec.Compute, error) {
-		var stmts = make([]exec.Compute, len(newStatementsFn))
+	return func(control *Control) (internal.Compute, error) {
+		var stmts = make([]internal.Compute, len(newStatementsFn))
 		var err error
 		for i := range newStatementsFn {
 			newFn := newStatementsFn[i]
@@ -165,7 +165,7 @@ func NewBlockStmt(newStatementsFn []New, forStmt bool) New {
 	}
 }
 
-func newBlockStmt(stmts []exec.Compute) exec.Compute {
+func newBlockStmt(stmts []internal.Compute) internal.Compute {
 	switch len(stmts) {
 	case 0:
 		return nop
