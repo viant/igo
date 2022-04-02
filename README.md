@@ -32,11 +32,20 @@ One execution plan can be shared alongside many instances state needed by execut
 State holds both variables and execution state used in the evaluation code.
 
 ```go
-    scope := plan.NewScope()
-	executor, stateNew, err := scope.Compile(code)
-    state := stateNew() //creates memory instance needed by executor
+package mypkg
 
+import "github.com/viant/igo"
+
+func usage() {
+    scope := igo.NewScope()
+	code := "go code here"
+    executor, stateNew, err := scope.Compile(code)
+	if err != nil {
+		panic(err)
+    }
+    state := stateNew() //creates memory instance needed by executor
     executor.Exec(state)
+}
 	
 ```
 
