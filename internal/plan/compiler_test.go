@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/igo/exec"
+	"github.com/viant/igo/option"
 	"log"
 	"reflect"
 	"strconv"
@@ -500,6 +501,62 @@ r := 0
 			continue
 		}
 	}
+
+}
+
+
+
+func TestNewTrackedScope(t *testing.T) {
+	type B struct {
+		Acc int
+	}
+	type A struct {
+		Count int
+		ActiveCount int
+		B  B
+	}
+
+	scope := NewScope(option.NewTracker("a", reflect.TypeOf(A{})))
+	scope.DefineVariable("t", reflect.TypeOf(true))
+	exec, newState, err := scope.Compile(`
+	r := 0
+	if t  {
+		a.Count = 10
+		a.B.Acc = 31
+		r = a.Count * a.B.Acc
+	}
+	`)
+	if ! assert.Nil(t, err) {
+		return
+	}
+	state := newState()
+	tracker := state.Tracker()
+	//test mutation
+	{
+		state.SetBool("t", true)
+		exec.Exec(state)
+		actual, _ := state.Int("r")
+		assert.Equal(t, 310, actual)
+		assert.True(t, tracker.Changed(0))
+		assert.False(t, tracker.Changed(1))
+		assert.True(t, tracker.Changed(2))
+		assert.True(t, tracker.Changed(2, 0))
+	}
+	//test no  mutation
+	{
+		state.SetBool("t", false)
+		exec.Exec(state)
+		actual, _ := state.Int("r")
+		assert.Equal(t, 0, actual)
+		assert.False(t, tracker.Changed(0))
+		assert.False(t, tracker.Changed(0))
+		assert.False(t, tracker.Changed(0))
+		assert.False(t, tracker.Changed(0, 0))
+	}
+
+
+
+
 
 }
 

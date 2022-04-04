@@ -1,6 +1,9 @@
 package igo
 
-import "github.com/viant/igo/internal/plan"
+import (
+	"github.com/viant/igo/internal/plan"
+	"github.com/viant/igo/option"
+)
 
 //Scope represents a scope
 type Scope struct {
@@ -8,6 +11,6 @@ type Scope struct {
 }
 
 //NewScope creates a scope
-func NewScope() *Scope {
-	return &Scope{*plan.NewScope()}
+func NewScope(option ...option.Option) *Scope {
+	return &Scope{*plan.NewScope(option...)}
 }

@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/stretchr/testify v1.7.0
-	github.com/viant/xunsafe v0.8.0
+	github.com/viant/xunsafe v0.8.1-0.20220402174902-a83e92a39ead
 )
 
 require (

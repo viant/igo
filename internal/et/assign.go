@@ -71,44 +71,77 @@ func NewCallExprAssign(caller exec.Caller, args []*Operand, dest []*Operand) (Ne
 }
 
 //NewAssignExpr create an assign expression
-func NewAssignExpr(ops ...*Operand) New {
+func NewAssignExpr(trackPos []uint16, ops ...*Operand) New {
 	operands := Operands(ops)
 	opType := operands[1].Type.Type()
 	isDirect := operands.pathway() == exec.PathwayDirect
+	trackable := len(trackPos) > 0
 	return func(exec *Control) (internal.Compute, error) {
 		assignExpr, err := operands.assignExpr(exec)
+		assignExpr.trackPos = trackPos
 		if err != nil {
 			return nil, err
 		}
 		if isDirect {
 			switch opType.Kind() {
 			case reflect.Int:
+				if trackable {
+					return assignExpr.directIntTackedAssign, nil
+				}
 				return assignExpr.directIntAssign, nil
 			case reflect.Float64:
+				if trackable {
+					return assignExpr.directFloat64TackedAssign, nil
+				}
 				return assignExpr.directFloat64Assign, nil
 			case reflect.String:
+				if trackable {
+					return assignExpr.directStringTackedAssign, nil
+				}
 				return assignExpr.directStringAssign, nil
 			case reflect.Bool:
+
+				if trackable {
+					return assignExpr.directBoolTackedAssign, nil
+				}
 				return assignExpr.directBoolAssign, nil
 			default:
 				if opType.ConvertibleTo(errType) {
 					return assignExpr.directErrorAssign, nil
+				}
+				if trackable {
+					return assignExpr.directTrackedAssign, nil
 				}
 				return assignExpr.directAssign, nil
 			}
 		}
 		switch opType.Kind() {
 		case reflect.Int:
+			if trackable {
+				return assignExpr.intTrackedAssign, nil
+			}
 			return assignExpr.intAssign, nil
 		case reflect.Float64:
+			if trackable {
+				return assignExpr.float64TrackedAssign, nil
+			}
 			return assignExpr.float64Assign, nil
 		case reflect.String:
+			if trackable {
+				return assignExpr.stringTrackedAssign, nil
+			}
 			return assignExpr.stringAssign, nil
 		case reflect.Bool:
+			if trackable {
+				return assignExpr.boolTrackedAssign, nil
+			}
 			return assignExpr.boolAssign, nil
 		default:
 			if opType.ConvertibleTo(errType) {
 				return assignExpr.errorAssign, nil
+			}
+			if trackable {
+				return assignExpr.trackedAssign, nil
 			}
 			return assignExpr.assign, nil
 		}
@@ -117,6 +150,7 @@ func NewAssignExpr(ops ...*Operand) New {
 
 type callAssign struct {
 	dest     []*exec.Operand
+	trackPos []int
 	offset   uintptr
 	callExpr *callExpr
 }
@@ -235,14 +269,43 @@ func (a *callAssign) computeR6(ptr unsafe.Pointer) unsafe.Pointer {
 }
 
 type assignExpr struct {
-	x       *exec.Selector
-	xOffset uintptr
-	y       *exec.Operand
-	yOffset uintptr
+	trackPos []uint16
+	x        *exec.Selector
+	xOffset  uintptr
+	y        *exec.Operand
+	yOffset  uintptr
+}
+
+func (e *assignExpr) setMutation(ptr unsafe.Pointer) {
+	tracker := *(**exec.Tracker)(unsafe.Pointer(uintptr(ptr) + 8))
+	tracker.Set(e.trackPos)
+}
+
+func (e *assignExpr) directIntTackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	dest := (*int)(unsafe.Pointer(uintptr(ptr) + e.xOffset))
+	src := *(*int)(unsafe.Pointer(uintptr(ptr) + e.yOffset))
+	if *dest == src {
+		return unsafe.Pointer(dest)
+	}
+	*dest = src
+	e.setMutation(ptr)
+	return nil
 }
 
 func (e *assignExpr) directIntAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	*(*int)(unsafe.Pointer(uintptr(ptr) + e.xOffset)) = *(*int)(unsafe.Pointer(uintptr(ptr) + e.yOffset))
+	return nil
+}
+
+
+func (e *assignExpr) directStringTackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	dest := (*string)(unsafe.Pointer(uintptr(ptr) + e.xOffset))
+	src := *(*string)(unsafe.Pointer(uintptr(ptr) + e.yOffset))
+	if *dest == src {
+		return unsafe.Pointer(dest)
+	}
+	*dest = src
+	e.setMutation(ptr)
 	return nil
 }
 
@@ -251,8 +314,31 @@ func (e *assignExpr) directStringAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	return nil
 }
 
+
+func (e *assignExpr) directBoolTackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	dest := (*bool)(unsafe.Pointer(uintptr(ptr) + e.xOffset))
+	src := *(*bool)(unsafe.Pointer(uintptr(ptr) + e.yOffset))
+	if *dest == src {
+		return unsafe.Pointer(dest)
+	}
+	*dest = src
+	e.setMutation(ptr)
+	return nil
+}
+
 func (e *assignExpr) directBoolAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	*(*bool)(unsafe.Pointer(uintptr(ptr) + e.xOffset)) = *(*bool)(unsafe.Pointer(uintptr(ptr) + e.yOffset))
+	return nil
+}
+
+func (e *assignExpr) directFloat64TackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	dest := (*float64)(unsafe.Pointer(uintptr(ptr) + e.xOffset))
+	src := *(*float64)(unsafe.Pointer(uintptr(ptr) + e.yOffset))
+	if *dest == src {
+		return unsafe.Pointer(dest)
+	}
+	*dest = src
+	e.setMutation(ptr)
 	return nil
 }
 
@@ -266,15 +352,46 @@ func (e *assignExpr) directErrorAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	return nil
 }
 
+
+func (e *assignExpr) directTrackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	value := e.y.Interface(unsafe.Pointer(uintptr(ptr) + e.yOffset))
+	e.x.SetValue(unsafe.Pointer(uintptr(ptr)+e.xOffset), value)
+	e.setMutation(ptr)
+	return nil
+}
+
 func (e *assignExpr) directAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	value := e.y.Interface(unsafe.Pointer(uintptr(ptr) + e.yOffset))
 	e.x.SetValue(unsafe.Pointer(uintptr(ptr)+e.xOffset), value)
 	return nil
 }
 
+func (e *assignExpr) intTrackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	x := *(*int)(e.y.Compute(ptr))
+	upstream := e.x.Upstream(ptr)
+	if x == (e.x.Int(upstream)) {
+		return nil
+	}
+	e.x.SetInt(upstream, x)
+	e.setMutation(ptr)
+	return nil
+}
+
+
 func (e *assignExpr) intAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	x := *(*int)(e.y.Compute(ptr))
 	e.x.SetInt(e.x.Upstream(ptr), x)
+	return nil
+}
+
+func (e *assignExpr) stringTrackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	x := *(*string)(e.y.Compute(ptr))
+	upstream := e.x.Upstream(ptr)
+	if x == (e.x.String(upstream)) {
+		return nil
+	}
+	e.x.SetString(upstream, x)
+	e.setMutation(ptr)
 	return nil
 }
 
@@ -283,8 +400,31 @@ func (e *assignExpr) stringAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	return nil
 }
 
+func (e *assignExpr) boolTrackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	x := *(*bool)(e.y.Compute(ptr))
+	upstream := e.x.Upstream(ptr)
+	if x == (e.x.Bool(upstream)) {
+		return nil
+	}
+	e.x.SetBool(upstream, x)
+	e.setMutation(ptr)
+	return nil
+}
+
 func (e *assignExpr) boolAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	e.x.SetBool(e.x.Upstream(ptr), *(*bool)(e.y.Compute(ptr)))
+	return nil
+}
+
+
+func (e *assignExpr) float64TrackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	x := *(*float64)(e.y.Compute(ptr))
+	upstream := e.x.Upstream(ptr)
+	if x == (e.x.Float64(upstream)) {
+		return nil
+	}
+	e.x.SetFloat64(upstream, x)
+	e.setMutation(ptr)
 	return nil
 }
 
@@ -298,9 +438,18 @@ func (e *assignExpr) errorAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	return nil
 }
 
+
 func (e *assignExpr) assign(ptr unsafe.Pointer) unsafe.Pointer {
 	yPtr := e.y.Compute(ptr)
 	value := e.y.Interface(yPtr)
 	e.x.SetValue(e.x.Upstream(ptr), value)
+	return nil
+}
+
+func (e *assignExpr) trackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	yPtr := e.y.Compute(ptr)
+	value := e.y.Interface(yPtr)
+	e.x.SetValue(e.x.Upstream(ptr), value)
+	e.setMutation(ptr)
 	return nil
 }

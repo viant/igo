@@ -33,7 +33,7 @@ func (s *Scope) compileCallExprAssign(callExpr *ast.CallExpr, dest []*et.Operand
 	fnNew, fType, ok, err := s.compileBuildIn(id, callExpr)
 	if ok {
 		_ = s.adjust(dest[0].Selector, fType)
-		return et.NewAssignExpr(dest[0], et.NewOperand(nil, fType, fnNew, nil)), nil
+		return et.NewAssignExpr(nil, dest[0], et.NewOperand(nil, fType, fnNew, nil)), nil
 	}
 	caller, args, ret, err := s.compileCallExprSignature(callExpr)
 	if err != nil {
@@ -54,21 +54,15 @@ func (s *Scope) compileCallExprAssign(callExpr *ast.CallExpr, dest []*et.Operand
 	return et.NewCallExprAssign(caller, args, dest)
 }
 
-//func (s *Scope) compileSingleReturnTypeCallExpr(callExpr *ast.CallExpr) (est.New, reflect.Type, error) {
-//	id := stringifyExpr(callExpr.Fun, 0)
-//	fnNew, fType, ok, err := s.compileBuildIn(id, callExpr)
-//	if ok {
-//		return fnNew, fType, err
-//	}
-//	newFn, retTypes, err := s.compileCallExpr(callExpr)
-//	if err != nil {
-//		return nil, nil, err
-//	}
-//	if len(retTypes) == 0 {
-//		return newFn, nil, nil
-//	}
-//	return newFn, retTypes[0], nil
-//}
+var emptyInt16s = []uint16{}
+
+func (s *Scope) trackerXPos(sel *exec.Selector) []uint16 {
+	if s.trackType == nil || (!strings.HasPrefix(sel.ID, s.trackRoot)) {
+		return emptyInt16s
+	}
+	return sel.XPos()[1:]//skip root level
+}
+
 
 func (s *Scope) compileCallExprSignature(callExpr *ast.CallExpr) (exec.Caller, []*et.Operand, []reflect.Type, error) {
 	id := stringifyExpr(callExpr.Fun, 0)

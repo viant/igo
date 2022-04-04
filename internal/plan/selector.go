@@ -56,7 +56,7 @@ func (s *Scope) DefineVariable(name string, fType reflect.Type) (*exec.Selector,
 }
 
 func (s *Scope) newTransient() (*exec.Selector, error) {
-	id := "_transient" + strconv.Itoa(*s.transients)
+	id := "_trnst" + strconv.Itoa(*s.transients)
 	*s.transients++
 	return s.DefineVariable(id, nil)
 }

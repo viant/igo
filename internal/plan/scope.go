@@ -3,6 +3,7 @@ package plan
 import (
 	"github.com/viant/igo/exec"
 	"github.com/viant/igo/internal/et"
+	"github.com/viant/igo/option"
 	"reflect"
 	"strconv"
 )
@@ -23,6 +24,7 @@ type Scope struct {
 	transients *int
 	mem        *memType
 	trackType  reflect.Type
+	trackRoot  string
 }
 
 func (s *Scope) subScope() *Scope {
@@ -48,23 +50,28 @@ func (s *Scope) subScope() *Scope {
 	}
 }
 
-//NewScope creates compilation scope
-func NewScope() *Scope {
-	mem := newMemType()
-	mem.addField("_flow", reflect.TypeOf(uint64(0)))
-
-	return newScope(mem)
+func (s *Scope) setTracker(tracker *option.Tracker) {
+	if tracker == nil {
+		return
+	}
+	_, _ = s.DefineVariable(tracker.Name, tracker.Target)
+	s.trackType = tracker.Target
+	s.trackRoot = tracker.Name
 }
 
-//NewTrackedScope create a scope with a tracked type
-func NewTrackedScope(trackedType reflect.Type) *Scope {
+//NewScope creates compilation scope
+func NewScope(options ...option.Option) *Scope {
 	mem := newMemType()
 	mem.addField("_flow", reflect.TypeOf(uint64(0)))
-	mem.addField("_tracker", reflect.TypeOf(&exec.Tracker{}))
+	tracker := option.Options(options).Tracker()
+	if tracker != nil {
+		mem.addField("_trk", reflect.TypeOf(&exec.Tracker{}))
+	}
 	ret := newScope(mem)
-	ret.trackType = trackedType
+	ret.setTracker(tracker)
 	return ret
 }
+
 
 func newScope(mem *memType) *Scope {
 	var selectors = make([]*exec.Selector, 0, 3)

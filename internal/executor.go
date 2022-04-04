@@ -13,6 +13,9 @@ type Executor struct {
 func (e *Executor) Exec(state *exec.State) {
 	ptr := state.Pointer()
 	AsFlow(ptr).Reset()
+	if trk := state.Tracker();trk != nil {
+		trk.Reset()
+	}
 	e.compute(state.Pointer())
 }
 

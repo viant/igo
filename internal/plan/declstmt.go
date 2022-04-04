@@ -51,7 +51,7 @@ func (s *Scope) declareTypedVariables(spec *ast.ValueSpec) (et.New, error) {
 		s.adjust(sel, sType)
 		left := et.NewOperand(sel, sType, nil, nil)
 		right := et.NewOperand(sel, sType, nil, reflect.New(sType).Elem().Interface())
-		state = append(state, et.NewAssignExpr(left, right))
+		state = append(state, et.NewAssignExpr(nil, left, right))
 	}
 	return et.NewGroupStmt(state, false), nil
 
@@ -69,10 +69,10 @@ func (s *Scope) defineVariables(spec *ast.ValueSpec) (et.New, error) {
 			if err != nil {
 				return nil, err
 			}
-			s.adjust(sel, destType)
+			_ = s.adjust(sel, destType)
 			left := et.NewOperand(sel, destType, nil, nil)
 			right := et.NewOperand(nil, destType, declr, nil)
-			declrs = append(declrs, et.NewAssignExpr(left, right))
+			declrs = append(declrs, et.NewAssignExpr(nil, left, right))
 		}
 	}
 	return et.NewGroupStmt(declrs, false), nil

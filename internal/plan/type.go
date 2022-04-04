@@ -42,6 +42,7 @@ func (s *Scope) RegisterType(t reflect.Type) error {
 	return nil
 }
 
+
 func (s *Scope) discoverType(exprType ast.Expr) (reflect.Type, error) {
 	isArray := isArrayIdentifier(exprType)
 	typeName := stringifyExpr(exprType, 0)
@@ -101,4 +102,19 @@ func derefType(p reflect.Type) reflect.Type {
 		return derefType(p.Elem())
 	}
 	return p
+}
+
+
+
+
+func structType(t reflect.Type) reflect.Type {
+	switch t.Kind() {
+	case reflect.Interface:
+		return structType(t.Elem())
+	case reflect.Struct:
+		return t
+	case reflect.Ptr:
+		return structType(t.Elem())
+	}
+	return nil
 }

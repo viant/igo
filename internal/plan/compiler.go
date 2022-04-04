@@ -18,7 +18,7 @@ func (s *Scope) Function(expr string) (interface{}, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile: %s, %w", expr, err)
 	}
-	stateNew := exec.StateNew(s.mem.Type, *s.selectors)
+	stateNew := exec.StateNew(s.mem.Type, *s.selectors, nil)
 	compute, err := newFn(&et.Control{Flow: s.Flow})
 	if err != nil {
 		return nil, err
@@ -64,7 +64,13 @@ func (s *Scope) Compile(expr string) (*internal.Executor, exec.New, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to compile: %s, %w", expr, err)
 	}
-	variablesNew := exec.StateNew(s.mem.Type, *s.selectors)
+
+
+	var tracker *exec.Tracker
+	if s.trackType != nil {
+		tracker = exec.NewTracker(s.trackType)
+	}
+	variablesNew := exec.StateNew(s.mem.Type, *s.selectors, tracker)
 	compute, err := newFn(&et.Control{Flow: s.Flow})
 	if err != nil {
 		return nil, nil, err

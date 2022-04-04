@@ -13,6 +13,7 @@ type New func() *State
 //State represents execution plan variables
 type State struct {
 	pointer   unsafe.Pointer
+	tracker   *Tracker
 	value     interface{}
 	index     map[string]uint16
 	selectors []*Selector
@@ -22,6 +23,7 @@ type State struct {
 func (v *State) Pointer() unsafe.Pointer {
 	return v.pointer
 }
+
 
 //SetValue sets value for
 func (v *State) SetValue(name string, value interface{}) error {
@@ -165,8 +167,12 @@ func (v *State) Selector(name string) (*Selector, error) {
 	return v.selectors[idx], nil
 }
 
+func (v *State) Tracker() *Tracker {
+	return v.tracker
+}
+
 //StateNew creates variables
-func StateNew(dest reflect.Type, selectors []*Selector) New {
+func StateNew(dest reflect.Type, selectors []*Selector, tracker *Tracker) New {
 	var index = make(map[string]uint16)
 	if len(selectors) == 0 {
 		fields := xunsafe.NewStruct(dest).Fields
@@ -185,6 +191,7 @@ func StateNew(dest reflect.Type, selectors []*Selector) New {
 			trueSelPos = int(sel.Pos)
 		}
 	}
+
 	return func() *State {
 		value := reflect.New(dest).Interface()
 		ret := &State{
@@ -192,6 +199,10 @@ func StateNew(dest reflect.Type, selectors []*Selector) New {
 			value:     value,
 			index:     index,
 			selectors: selectors,
+		}
+		if tracker != nil {
+			ret.tracker = tracker.Clone()
+			*(**Tracker)(unsafe.Pointer(uintptr(ret.pointer) +  8)) = ret.tracker
 		}
 		if trueSelPos != -1 {
 			ret.SetBoolAt(trueSelPos, true)

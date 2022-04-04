@@ -17,7 +17,41 @@ type Selector struct {
 	//and Ancestors lookup need to take place to resolve data address
 	Ancestors []*Selector
 	Pos       uint16
+	xPos      []uint16
 }
+
+//XPos returns xunsafe.Field position starting with ancestor
+func (s *Selector) XPos() []uint16 {
+	if len(s.xPos) > 0 {
+		return s.xPos
+	}
+	if len(s.Ancestors) > 0 {
+		for _, item := range s.Ancestors {
+			s.xPos = append(s.xPos, item.Field.Index)
+		}
+	}
+	s.xPos = append(s.xPos, s.Field.Index)
+	return s.xPos
+}
+
+/*
+	if structType(sel.Type) == s.trackType {
+		return []int{int(sel.Field.Index)}
+	}
+	if len(sel.Ancestors) == 0 {
+		return emptyInts
+	}
+	for i, ancestor := range sel.Ancestors {
+		if structType(ancestor.Field.Type) == s.trackType {
+			var path = make([]int, 0)
+			for j := i; j < len(sel.Ancestors); j++ {
+				path = append(path, int(sel.Ancestors[i].Field.Index))
+			}
+			path = append(path, int(sel.Field.Index))
+			return path
+		}
+	}
+*/
 
 //IndexPointer returns slice item pointer
 func (s *Selector) IndexPointer(ptr unsafe.Pointer, index int) unsafe.Pointer {

@@ -43,7 +43,8 @@ func (s *Scope) compileAssign(left, right *et.Operand, assignToken token.Token, 
 			s.adjust(left.Selector, right.Type.Type())
 			left.Type = right.Type
 		}
-		return et.NewAssignExpr(left, right), nil
+		xPos := s.trackerXPos(left.Selector)
+		return et.NewAssignExpr(xPos, left, right), nil
 	}
 }
 

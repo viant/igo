@@ -20,5 +20,3 @@ func TestNewScope(t *testing.T) {
 		assert.Equal(t, 11, actual(6, 5))
 	}
 }
-
-
