@@ -11,6 +11,7 @@ import (
 )
 
 func (s *Scope) compileCallExpr(callExpr *ast.CallExpr) (et.New, []reflect.Type, error) {
+	s.Metric.FlagCall()
 	id := stringifyExpr(callExpr.Fun, 0)
 	fnNew, fType, ok, err := s.compileBuildIn(id, callExpr)
 	if ok {
@@ -29,6 +30,7 @@ func (s *Scope) compileCallExpr(callExpr *ast.CallExpr) (et.New, []reflect.Type,
 }
 
 func (s *Scope) compileCallExprAssign(callExpr *ast.CallExpr, dest []*et.Operand) (et.New, error) {
+	s.Metric.FlagCall()
 	id := stringifyExpr(callExpr.Fun, 0)
 	fnNew, fType, ok, err := s.compileBuildIn(id, callExpr)
 	if ok {
@@ -39,7 +41,6 @@ func (s *Scope) compileCallExprAssign(callExpr *ast.CallExpr, dest []*et.Operand
 	if err != nil {
 		return nil, err
 	}
-
 	for i := range dest {
 		if ret[i].Kind() == reflect.Interface {
 			if dest[i].Type != nil {
@@ -60,9 +61,8 @@ func (s *Scope) trackerXPos(sel *exec.Selector) []uint16 {
 	if s.trackType == nil || (!strings.HasPrefix(sel.ID, s.trackRoot)) {
 		return emptyInt16s
 	}
-	return sel.XPos()[1:]//skip root level
+	return sel.XPos()[1:] //skip root level
 }
-
 
 func (s *Scope) compileCallExprSignature(callExpr *ast.CallExpr) (exec.Caller, []*et.Operand, []reflect.Type, error) {
 	id := stringifyExpr(callExpr.Fun, 0)

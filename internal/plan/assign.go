@@ -20,7 +20,6 @@ func (s *Scope) compileAssignStmt(assignStmt *ast.AssignStmt) (et.New, error) {
 	if isCallExprAssigment {
 		return s.compileCallExprAssign(callExpr, lOperands)
 	}
-
 	var group = make([]et.New, len(lOperands))
 	for i := 0; i < len(lOperands); i++ {
 		if group[i], err = s.compileAssign(lOperands[i], rOperands[i], assignStmt.Tok, define); err != nil {

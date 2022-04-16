@@ -5,7 +5,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/traefik/yaegi/interp"
 	"github.com/viant/igo/exec"
-	"github.com/viant/igo/internal"
 	"github.com/viant/igo/internal/exec"
 	"github.com/viant/igo/internal/expr"
 	"github.com/viant/igo/internal/plan"
@@ -14,7 +13,7 @@ import (
 	"testing"
 )
 
-var benchExecution *internal.Executor
+var benchExecution *exec.Executor
 var benchVars *exec.State
 var benchNative = func() int {
 	z := 0
@@ -124,7 +123,7 @@ func Benchmark_Loop_Igo(b *testing.B) {
 	}
 }
 
-var benchLoopIgo *internal.Executor
+var benchLoopIgo *exec.Executor
 var benchLoopIgoVars *exec.State
 
 func initLoopIgo() {

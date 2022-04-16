@@ -11,13 +11,16 @@ func (s *Scope) compileStmt(stmt ast.Stmt) (et.New, error) {
 
 	switch actual := stmt.(type) {
 	case *ast.AssignStmt:
+		s.Metric.FlagAssign()
 		return s.compileAssignStmt(actual)
 	case *ast.BlockStmt:
 		scope := s.subScope()
 		return scope.compileBlockStmt(actual, false)
 	case *ast.IncDecStmt:
+		s.Metric.FlagAssign()
 		return s.compileIncDec(actual)
 	case *ast.IfStmt:
+		s.Metric.FlagIfElse()
 		return s.compileIfStmt(actual)
 	case *ast.ReturnStmt:
 		s.Control.Concat(internal.RtReturn)
@@ -27,14 +30,17 @@ func (s *Scope) compileStmt(stmt ast.Stmt) (et.New, error) {
 		}
 		return et.NewReturnStmt(operands, *s.out)
 	case *ast.ForStmt:
+		s.Metric.FlagFor()
 		return s.compileForStmt(actual)
 	case *ast.DeclStmt:
+		s.Metric.FlagDeclare()
 		return s.compileDeclStmt(actual.Decl)
 	case *ast.BranchStmt:
 		return s.compileBranchStmt(actual)
 	case *ast.RangeStmt:
 		return s.compileRangeStmt(actual)
 	case *ast.ExprStmt:
+		s.Metric.FlagExpr()
 		n, _, err := s.compileExpr(actual.X)
 		return n, err
 	}

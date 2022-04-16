@@ -3,7 +3,6 @@ package plan
 import (
 	"fmt"
 	"github.com/viant/igo/exec"
-	"github.com/viant/igo/internal"
 	"github.com/viant/igo/internal/et"
 	"go/ast"
 	"go/parser"
@@ -23,7 +22,7 @@ func (s *Scope) Function(expr string) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	execution := internal.NewExecution(compute)
+	execution := exec.NewExecution(compute)
 	execution.In = exec.Selectors(*s.in).IDs()
 	execution.Out = exec.Selectors(*s.out).IDs()
 	var in, out []reflect.Type
@@ -59,13 +58,11 @@ func (s *Scope) Function(expr string) (interface{}, error) {
 }
 
 //Compile parses and compile simple golang expression into execution tree
-func (s *Scope) Compile(expr string) (*internal.Executor, exec.New, error) {
+func (s *Scope) Compile(expr string) (*exec.Executor, exec.New, error) {
 	newFn, err := s.compile(expr)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to compile: %s, %w", expr, err)
 	}
-
-
 	var tracker *exec.Tracker
 	if s.trackType != nil {
 		tracker = exec.NewTracker(s.trackType)
@@ -75,13 +72,14 @@ func (s *Scope) Compile(expr string) (*internal.Executor, exec.New, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	result := internal.NewExecution(compute)
+	result := exec.NewExecution(compute)
 	result.In = exec.Selectors(*s.in).IDs()
 	result.Out = exec.Selectors(*s.out).IDs()
 	return result, variablesNew, err
 }
 
 func (s *Scope) compile(expr string) (et.New, error) {
+	s.Metric.Reset()
 	fn, err := s.compileFunction(expr)
 	if err != nil {
 		return nil, err

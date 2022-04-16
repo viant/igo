@@ -3,6 +3,7 @@ package plan
 import (
 	"github.com/viant/igo/exec"
 	"github.com/viant/igo/internal/et"
+	"github.com/viant/igo/metric"
 	"github.com/viant/igo/option"
 	"reflect"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 //Scope represents compilation scope
 type Scope struct {
 	*et.Control
+	Metric     metric.Stmt
 	execType   interface{}
 	count      *int
 	upstream   []string
@@ -71,7 +73,6 @@ func NewScope(options ...option.Option) *Scope {
 	ret.setTracker(tracker)
 	return ret
 }
-
 
 func newScope(mem *memType) *Scope {
 	var selectors = make([]*exec.Selector, 0, 3)
