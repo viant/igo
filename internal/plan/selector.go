@@ -37,6 +37,18 @@ func (s *Scope) lookup(expr string) *exec.Selector {
 	return nil
 }
 
+//ResolveSelector returns existing or adds selector to the scope
+func (s *Scope) ResolveSelector(selector string) (*exec.Selector, error) {
+	if sel := s.lookup(selector); sel != nil {
+		return sel, nil
+	}
+	expr, err := expression(selector)
+	if err != nil {
+		return nil, err
+	}
+	return s.selector(expr, true)
+}
+
 //DefineVariable defines variables
 func (s *Scope) DefineVariable(name string, fType reflect.Type) (*exec.Selector, error) {
 	id := s.varID(name)
@@ -60,7 +72,6 @@ func (s *Scope) newTransient() (*exec.Selector, error) {
 	*s.transients++
 	return s.DefineVariable(id, nil)
 }
-
 
 func (s *Scope) selector(expr ast.Expr, define bool) (*exec.Selector, error) {
 	id := stringifyExpr(expr, 0)
