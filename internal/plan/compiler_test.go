@@ -504,19 +504,55 @@ r := 0
 
 }
 
+func TestDefineEmbedVariable(t *testing.T) {
+	type B struct {
+		Acc int
+	}
+	type A struct {
+		Count       int
+		ActiveCount int
+		B           B
+	}
 
+	//	scope := NewScope(option.NewTracker("State", reflect.TypeOf(A{}), true))
+	scope := NewScope()
+	scope.DefineEmbedVariable("State", reflect.TypeOf(A{}))
+	scope.DefineVariable("t", reflect.TypeOf(true))
+	exec, newState, err := scope.Compile(`
+	r := 0
+	if t  {
+		Count = 10
+		B.Acc = 31
+		r = Count * B.Acc
+	}
+	`)
+	if !assert.Nil(t, err) {
+		return
+	}
+	state := newState()
+	state.SetBool("t", true)
+
+	//tracker := state.Tracker()
+	//test mutation
+	{
+		state.SetBool("t", true)
+		exec.Exec(state)
+		actual, _ := state.Int("r")
+		assert.Equal(t, 310, actual)
+	}
+}
 
 func TestNewTrackedScope(t *testing.T) {
 	type B struct {
 		Acc int
 	}
 	type A struct {
-		Count int
+		Count       int
 		ActiveCount int
-		B  B
+		B           B
 	}
 
-	scope := NewScope(option.NewTracker("a", reflect.TypeOf(A{})))
+	scope := NewScope(option.NewTracker("a", reflect.TypeOf(A{}), false))
 	scope.DefineVariable("t", reflect.TypeOf(true))
 	exec, newState, err := scope.Compile(`
 	r := 0
@@ -526,7 +562,7 @@ func TestNewTrackedScope(t *testing.T) {
 		r = a.Count * a.B.Acc
 	}
 	`)
-	if ! assert.Nil(t, err) {
+	if !assert.Nil(t, err) {
 		return
 	}
 	state := newState()
@@ -554,10 +590,6 @@ func TestNewTrackedScope(t *testing.T) {
 		assert.False(t, tracker.Changed(0, 0))
 	}
 
-
-
-
-
 }
 
 type ctest struct {
@@ -567,7 +599,6 @@ type ctest struct {
 func (c *ctest) SetActive(b bool) {
 	c.Active = b
 }
-
 
 type testFn func(s string) (bool, error)
 

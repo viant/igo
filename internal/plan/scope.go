@@ -52,13 +52,22 @@ func (s *Scope) subScope() *Scope {
 	}
 }
 
-func (s *Scope) setTracker(tracker *option.Tracker) {
+func (s *Scope) setTracker(tracker *option.Tracker) error {
 	if tracker == nil {
-		return
+		return nil
 	}
-	_, _ = s.DefineVariable(tracker.Name, tracker.Target)
+	if tracker.Embed {
+		if err := s.DefineEmbedVariable(tracker.Name, tracker.Target); err != nil {
+			return err
+		}
+	} else {
+		if _, err := s.DefineVariable(tracker.Name, tracker.Target); err != nil {
+			return err
+		}
+	}
 	s.trackType = tracker.Target
 	s.trackRoot = tracker.Name
+	return nil
 }
 
 //NewScope creates compilation scope
@@ -70,7 +79,10 @@ func NewScope(options ...option.Option) *Scope {
 		mem.addField("_trk", reflect.TypeOf(&exec.Tracker{}))
 	}
 	ret := newScope(mem)
-	ret.setTracker(tracker)
+	err := ret.setTracker(tracker)
+	if err != nil {
+		panic(err)
+	}
 	return ret
 }
 

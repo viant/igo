@@ -37,7 +37,7 @@ func (s *Scope) lookup(expr string) *exec.Selector {
 	return nil
 }
 
-//ResolveSelector returns existing or adds selector to the scope
+//ResolveSelector returns existing or regsterSelector selector to the scope
 func (s *Scope) ResolveSelector(selector string) (*exec.Selector, error) {
 	if sel := s.lookup(selector); sel != nil {
 		return sel, nil
@@ -47,6 +47,29 @@ func (s *Scope) ResolveSelector(selector string) (*exec.Selector, error) {
 		return nil, err
 	}
 	return s.selector(expr, true)
+}
+
+//DefineEmbedVariable defines embeded variable
+func (s *Scope) DefineEmbedVariable(name string, t reflect.Type) error {
+	s.EmbedType(name, t)
+	root := s.lookup(name)
+	structType := t
+	if t.Kind() == reflect.Ptr {
+		structType = t.Elem()
+	}
+	if structType.Kind() != reflect.Struct {
+		return nil
+	}
+
+	xStruct := xunsafe.NewStruct(structType)
+	ancestor := []*exec.Selector{root}
+	for i, xField := range xStruct.Fields {
+		sel := &exec.Selector{Field: &xStruct.Fields[i], ID: xField.Name, Ancestors: ancestor}
+		if err := s.appendSelector(sel); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 //DefineVariable defines variables
@@ -177,7 +200,6 @@ func (s *Scope) varName(name string) string {
 }
 
 func (s *Scope) appendSelector(sel *exec.Selector) error {
-	index := len(*s.selectors)
 	if sel.ID == "" {
 		return fmt.Errorf("selector ID was empty")
 	}
@@ -187,8 +209,7 @@ func (s *Scope) appendSelector(sel *exec.Selector) error {
 	if s.lookup(sel.ID) != nil {
 		return fmt.Errorf("variable %v already defined", sel.Name)
 	}
-	s.index[sel.ID] = uint16(index)
-	sel.Pos = uint16(index)
+
 	if sel.Type.ConvertibleTo(errType) {
 		sel.Type = errType
 	}
@@ -202,8 +223,15 @@ func (s *Scope) appendSelector(sel *exec.Selector) error {
 		}
 	}
 	sel.IsErrorType = sel.Type.ConvertibleTo(errType)
-	*s.selectors = append(*s.selectors, sel)
+	s.regsterSelector(sel)
 	return nil
+}
+
+func (s *Scope) regsterSelector(sel *exec.Selector) {
+	index := len(*s.selectors)
+	s.index[sel.ID] = uint16(index)
+	sel.Pos = uint16(index)
+	*s.selectors = append(*s.selectors, sel)
 }
 
 //adjust selector type from inferred expression (t nsType)

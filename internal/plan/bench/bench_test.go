@@ -5,7 +5,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/traefik/yaegi/interp"
 	"github.com/viant/igo/exec"
-	"github.com/viant/igo/internal/exec"
 	"github.com/viant/igo/internal/expr"
 	"github.com/viant/igo/internal/plan"
 	"github.com/xtaci/goeval"

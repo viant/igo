@@ -3,8 +3,11 @@ module github.com/viant/igo
 go 1.17
 
 require (
+	github.com/maja42/goval v1.2.1
 	github.com/stretchr/testify v1.7.0
-	github.com/viant/xunsafe v0.8.1-0.20220402174902-a83e92a39ead
+	github.com/traefik/yaegi v0.12.0
+	github.com/viant/xunsafe v0.8.1-0.20220517184704-270ed1a5aec9
+	github.com/xtaci/goeval v0.0.0-20151020061230-143e9f9be39c
 )
 
 require (

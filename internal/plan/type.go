@@ -2,6 +2,7 @@ package plan
 
 import (
 	"fmt"
+	"github.com/viant/igo/exec"
 	"go/ast"
 	"reflect"
 	"strings"
@@ -25,6 +26,13 @@ func (s *Scope) ensureType(rawType reflect.Type) {
 	}
 }
 
+//EmbedType embeds supplied type
+func (s *Scope) EmbedType(name string, t reflect.Type) {
+	xField := s.mem.embedField(name, t)
+	sel := &exec.Selector{Field: xField, ID: xField.Name}
+	s.regsterSelector(sel)
+}
+
 //RegisterNamedType register named type
 func (s *Scope) RegisterNamedType(name string, t reflect.Type) {
 	s.types[name] = t
@@ -41,7 +49,6 @@ func (s *Scope) RegisterType(t reflect.Type) error {
 	s.types[t.Name()] = t
 	return nil
 }
-
 
 func (s *Scope) discoverType(exprType ast.Expr) (reflect.Type, error) {
 	isArray := isArrayIdentifier(exprType)
@@ -103,9 +110,6 @@ func derefType(p reflect.Type) reflect.Type {
 	}
 	return p
 }
-
-
-
 
 func structType(t reflect.Type) reflect.Type {
 	switch t.Kind() {
