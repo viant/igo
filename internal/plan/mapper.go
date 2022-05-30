@@ -17,7 +17,7 @@ func (s *Scope) compileMapper(holder *exec.Selector, expr *ast.CallExpr) (et.New
 	if !ok {
 		return nil, nil, fmt.Errorf("%v invalid args", stringifyExpr(expr.Fun, 0))
 	}
-	scope := s.subScope()
+	scope := s.SubScope()
 	parameters, err := scope.paramSelectors(funcLit.Type.Params.List)
 	if err != nil {
 		return nil, nil, err

@@ -29,7 +29,7 @@ type Scope struct {
 	trackRoot  string
 }
 
-func (s *Scope) subScope() *Scope {
+func (s *Scope) SubScope() *Scope {
 	*s.count++
 	var types = make(map[string]reflect.Type)
 	for k, v := range s.types {

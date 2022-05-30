@@ -14,7 +14,7 @@ func (s *Scope) compileStmt(stmt ast.Stmt) (et.New, error) {
 		s.Metric.FlagAssign()
 		return s.compileAssignStmt(actual)
 	case *ast.BlockStmt:
-		scope := s.subScope()
+		scope := s.SubScope()
 		return scope.compileBlockStmt(actual, false)
 	case *ast.IncDecStmt:
 		s.Metric.FlagAssign()

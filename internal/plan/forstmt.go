@@ -7,7 +7,7 @@ import (
 
 func (s *Scope) compileForStmt(forStmt *ast.ForStmt) (et.New, error) {
 	var err error
-	scope := s.subScope()
+	scope := s.SubScope()
 	var cond *et.Operand
 	var init, post, body et.New
 	if forStmt.Init != nil {

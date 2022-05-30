@@ -22,7 +22,7 @@ func (s *Scope) compileReducer(holder *exec.Selector, expr *ast.CallExpr) (et.Ne
 	if len(args) > 1 {
 		init, err = s.assembleOperand(args[1], false)
 	}
-	scope := s.subScope()
+	scope := s.SubScope()
 	parameters, err := scope.paramSelectors(funcLit.Type.Params.List)
 	if err != nil {
 		return nil, nil, err

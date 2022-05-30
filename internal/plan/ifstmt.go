@@ -10,7 +10,7 @@ func (s *Scope) compileIfStmt(ifStmt *ast.IfStmt) (et.New, error) {
 	if err != nil {
 		return nil, err
 	}
-	scope := s.subScope()
+	scope := s.SubScope()
 	var whenBranch, elseBranch et.New
 	whenBranch, err = scope.compileBlockStmt(ifStmt.Body, false)
 	if err != nil {
@@ -19,7 +19,7 @@ func (s *Scope) compileIfStmt(ifStmt *ast.IfStmt) (et.New, error) {
 	if ifStmt.Else != nil {
 		switch actual := ifStmt.Else.(type) {
 		case *ast.BlockStmt:
-			elseWhenScope := s.subScope()
+			elseWhenScope := s.SubScope()
 			if elseBranch, err = elseWhenScope.compileBlockStmt(actual, false); err != nil {
 				return nil, err
 			}
