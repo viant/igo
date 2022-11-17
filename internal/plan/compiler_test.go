@@ -15,6 +15,7 @@ import (
 func TestScope_Function(t *testing.T) {
 	{
 		scope := NewScope()
+
 		fn, err := scope.Function(`func(x, y int) int {
 		return x+y
 	}`)
@@ -482,12 +483,12 @@ r := 0
 		if testCase.variableName != "" {
 			testCase.scope.DefineVariable(testCase.variableName, reflect.TypeOf(testCase.variable))
 		}
-		execution, newVars, err := testCase.scope.Compile(testCase.code)
+		execution, err := testCase.scope.Compile(testCase.code)
 		if !assert.Nil(t, err, testCase.description) {
 			fmt.Println(err)
 			continue
 		}
-		state := newVars()
+		state := execution.NewState()
 		if testCase.variableName != "" {
 			state.SetValue(testCase.variableName, testCase.variable)
 		}
@@ -518,7 +519,7 @@ func TestDefineEmbedVariable(t *testing.T) {
 	scope := NewScope()
 	scope.DefineEmbedVariable("State", reflect.TypeOf(A{}))
 	scope.DefineVariable("t", reflect.TypeOf(true))
-	exec, newState, err := scope.Compile(`
+	exec, err := scope.Compile(`
 	r := 0
 	if t  {
 		Count = 10
@@ -529,7 +530,7 @@ func TestDefineEmbedVariable(t *testing.T) {
 	if !assert.Nil(t, err) {
 		return
 	}
-	state := newState()
+	state := exec.NewState()
 	state.SetBool("t", true)
 
 	//tracker := state.Tracker()
@@ -554,7 +555,7 @@ func TestNewTrackedScope(t *testing.T) {
 
 	scope := NewScope(option.NewTracker("a", reflect.TypeOf(A{}), false))
 	scope.DefineVariable("t", reflect.TypeOf(true))
-	exec, newState, err := scope.Compile(`
+	exec, err := scope.Compile(`
 	r := 0
 	if t  {
 		a.Count = 10
@@ -565,7 +566,11 @@ func TestNewTrackedScope(t *testing.T) {
 	if !assert.Nil(t, err) {
 		return
 	}
-	state := newState()
+	state := exec.NewState()
+
+	count, _ := state.Selector("a.Count")
+	acc, _ := state.Selector("a.B.Acc")
+
 	tracker := state.Tracker()
 	//test mutation
 	{
@@ -573,21 +578,19 @@ func TestNewTrackedScope(t *testing.T) {
 		exec.Exec(state)
 		actual, _ := state.Int("r")
 		assert.Equal(t, 310, actual)
-		assert.True(t, tracker.Changed(0))
-		assert.False(t, tracker.Changed(1))
-		assert.True(t, tracker.Changed(2))
-		assert.True(t, tracker.Changed(2, 0))
+		assert.True(t, tracker.Has(count.Pos), "count tracker")
+		assert.True(t, tracker.Has(acc.Pos), "acc tracker")
+
 	}
 	//test no  mutation
 	{
+		tracker.Reset()
 		state.SetBool("t", false)
 		exec.Exec(state)
 		actual, _ := state.Int("r")
 		assert.Equal(t, 0, actual)
-		assert.False(t, tracker.Changed(0))
-		assert.False(t, tracker.Changed(0))
-		assert.False(t, tracker.Changed(0))
-		assert.False(t, tracker.Changed(0, 0))
+		assert.False(t, tracker.Has(count.Pos), "count tracker")
+		assert.False(t, tracker.Has(acc.Pos), "acc tracker")
 	}
 
 }

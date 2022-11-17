@@ -55,13 +55,14 @@ func ExampleScope_Compile() {
 	}`
 
 	scope := igo.NewScope()
-	executor, stateNew, err := scope.Compile(code)
+	executor, err := scope.Compile(code)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	state := stateNew() //there could be
+	state := executor.NewState() //there could be
 	executor.Exec(state)
+	state.Release()
 	result, _ := state.Int("s")
 	fmt.Printf("result: %v\n", result)
 
@@ -83,11 +84,11 @@ func ExampleScope_DefineVariable() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	executor, stateNew, err := scope.Compile(code)
+	executor, err := scope.Compile(code)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	state := stateNew()
+	state := executor.NewState()
 	err = state.SetValue("accounts", []Account{
 		{Total: 1.3},
 		{Total: 3.7},

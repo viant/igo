@@ -3,8 +3,8 @@ package plan
 import (
 	"fmt"
 	"github.com/viant/igo/exec"
+	expr "github.com/viant/igo/exec/expr"
 	"github.com/viant/igo/internal/et"
-	"github.com/viant/igo/internal/expr"
 	"go/ast"
 	"reflect"
 )
@@ -18,7 +18,7 @@ func (s *Scope) IntExpression(exprStmt string) (*expr.Int, error) {
 	if exprType.Kind() != reflect.Int {
 		return nil, fmt.Errorf("invalid expression type: %v", exprType.String())
 	}
-	variablesNew := exec.StateNew(s.mem.Type, *s.selectors, nil)
+	variablesNew := exec.StateNew(s.mem.Type, *s.selectors, nil, nil)
 	compute, err := exprNew(&et.Control{})
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func (s *Scope) BoolExpression(exprStmt string) (*expr.Bool, error) {
 	if exprType.Kind() != reflect.Bool {
 		return nil, fmt.Errorf("invalid expression type: %v", exprType.String())
 	}
-	variablesNew := exec.StateNew(s.mem.Type, *s.selectors, nil)
+	variablesNew := exec.StateNew(s.mem.Type, *s.selectors, nil, nil)
 	compute, err := exprNew(&et.Control{})
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func (s *Scope) Float64Expression(exprStmt string) (*expr.Float64, error) {
 	if exprType.Kind() != reflect.Float64 {
 		return nil, fmt.Errorf("invalid expression type: %v", exprType.String())
 	}
-	variablesNew := exec.StateNew(s.mem.Type, *s.selectors, nil)
+	variablesNew := exec.StateNew(s.mem.Type, *s.selectors, nil, nil)
 	compute, err := exprNew(&et.Control{})
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func (s *Scope) StringExpression(exprStmt string) (*expr.String, error) {
 	if exprType.Kind() != reflect.String {
 		return nil, fmt.Errorf("invalid expression type: %v", exprType.String())
 	}
-	variablesNew := exec.StateNew(s.mem.Type, *s.selectors, nil)
+	variablesNew := exec.StateNew(s.mem.Type, *s.selectors, nil, nil)
 	compute, err := exprNew(&et.Control{})
 	if err != nil {
 		return nil, err
@@ -94,8 +94,18 @@ func (s *Scope) compileExprStmt(expr string) (et.New, reflect.Type, error) {
 	return s.compileExpr(stmt.X)
 }
 
-func (s *Scope) compileExpr(stmt ast.Expr) (et.New, reflect.Type, error) {
-	switch z := stmt.(type) {
+func (s *Scope) compileExpr(expr ast.Expr) (et.New, reflect.Type, error) {
+	if s.exprListener != nil {
+		newExpr, err := s.exprListener(expr)
+		if err != nil {
+			return nil, nil, err
+		}
+		if newExpr != nil {
+			expr = newExpr
+		}
+	}
+
+	switch z := expr.(type) {
 	case *ast.BinaryExpr:
 		return s.compileBinaryExpr(z)
 	case *ast.ParenExpr:
@@ -115,7 +125,7 @@ func (s *Scope) compileExpr(stmt ast.Expr) (et.New, reflect.Type, error) {
 	case *ast.CompositeLit:
 		return s.compileCompositeLiteral(0, z)
 	}
-	return nil, nil, fmt.Errorf("unsupported %T", stmt)
+	return nil, nil, fmt.Errorf("unsupported %T", expr)
 }
 
 func (s *Scope) compileBinaryExpr(binaryExpr *ast.BinaryExpr) (et.New, reflect.Type, error) {
@@ -155,6 +165,16 @@ func (s *Scope) assembleOperand(expr ast.Expr, defined bool) (*et.Operand, error
 		op = et.NewOperand(nil, eType, newFn, nil)
 	}
 	return op, nil
+}
+
+//Parse returns an ast for the supploed expression
+func (s *Scope) Parse(expr string) (ast.Stmt, error) {
+	fn, err := s.compileFunction(expr)
+	if err != nil {
+		return nil, err
+	}
+	stmt := fn.Body.List[0]
+	return stmt, nil
 }
 
 //expression returns ast for supplied expr or error

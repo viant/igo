@@ -30,7 +30,7 @@ func (s *Scope) ensureType(rawType reflect.Type) {
 func (s *Scope) EmbedType(name string, t reflect.Type) {
 	xField := s.mem.embedField(name, t)
 	sel := &exec.Selector{Field: xField, ID: xField.Name}
-	s.regsterSelector(sel)
+	s.registerSelector(sel)
 }
 
 //RegisterNamedType register named type

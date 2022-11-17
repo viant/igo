@@ -20,17 +20,17 @@ type Selector struct {
 	xPos      []uint16
 }
 
-//XPos returns xunsafe.Field position starting with ancestor
+//XPos returns selector position including with ancestor
 func (s *Selector) XPos() []uint16 {
 	if len(s.xPos) > 0 {
 		return s.xPos
 	}
 	if len(s.Ancestors) > 0 {
 		for _, item := range s.Ancestors {
-			s.xPos = append(s.xPos, item.Field.Index)
+			s.xPos = append(s.xPos, item.Pos)
 		}
 	}
-	s.xPos = append(s.xPos, s.Field.Index)
+	s.xPos = append(s.xPos, s.Pos)
 	return s.xPos
 }
 
@@ -42,22 +42,22 @@ func (s *Selector) IndexPointer(ptr unsafe.Pointer, index int) unsafe.Pointer {
 
 //Upstream returns Ancestors pointer, excluding current Selector ogf
 func (s *Selector) Upstream(ptr unsafe.Pointer) unsafe.Pointer {
-	ret := ptr
+	transientPtr := ptr
 	i := 0
 	l := len(s.Ancestors)
 begin:
 	if i >= l {
-		return ret
+		return transientPtr
 	}
 	sel := s.Ancestors[i]
 	if idxSel := sel.Index; idxSel != nil {
 		idx := xunsafe.AsInt(idxSel.Compute(ptr))
-		ret = sel.Slice.PointerAt(ret, uintptr(idx))
+		transientPtr = sel.Slice.PointerAt(transientPtr, uintptr(idx))
 		if sel.Kind() == reflect.Ptr {
-			ret = xunsafe.DerefPointer(ret)
+			transientPtr = xunsafe.DerefPointer(transientPtr)
 		}
 	} else {
-		ret = sel.ValuePointer(ret)
+		transientPtr = sel.ValuePointer(transientPtr)
 	}
 	i++
 	goto begin
@@ -96,7 +96,7 @@ func (s *Selector) UpstreamOffset() uintptr {
 	return result
 }
 
-//Interface return an interface
+//Interface return an interface,
 func (s *Selector) Interface(ptr unsafe.Pointer) interface{} {
 	adr := s.Upstream(ptr)
 	if s.IsErrorType {
@@ -106,7 +106,13 @@ func (s *Selector) Interface(ptr unsafe.Pointer) interface{} {
 	return x
 }
 
-//SetValue sets value
+//SetInterface sets interface, it takes a state pointer
+func (s *Selector) SetInterface(ptr unsafe.Pointer, value interface{}) {
+	addr := s.Upstream(ptr)
+	s.Field.SetValue(addr, value)
+}
+
+//SetValue sets value, tt takes an upstream pointer
 func (s *Selector) SetValue(ptr unsafe.Pointer, value interface{}) {
 	if s.IsErrorType {
 		err, _ := value.(error)

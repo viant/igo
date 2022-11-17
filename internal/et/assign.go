@@ -297,7 +297,6 @@ func (e *assignExpr) directIntAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	return nil
 }
 
-
 func (e *assignExpr) directStringTackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	dest := (*string)(unsafe.Pointer(uintptr(ptr) + e.xOffset))
 	src := *(*string)(unsafe.Pointer(uintptr(ptr) + e.yOffset))
@@ -313,7 +312,6 @@ func (e *assignExpr) directStringAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	*(*string)(unsafe.Pointer(uintptr(ptr) + e.xOffset)) = *(*string)(unsafe.Pointer(uintptr(ptr) + e.yOffset))
 	return nil
 }
-
 
 func (e *assignExpr) directBoolTackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	dest := (*bool)(unsafe.Pointer(uintptr(ptr) + e.xOffset))
@@ -352,7 +350,6 @@ func (e *assignExpr) directErrorAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	return nil
 }
 
-
 func (e *assignExpr) directTrackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	value := e.y.Interface(unsafe.Pointer(uintptr(ptr) + e.yOffset))
 	e.x.SetValue(unsafe.Pointer(uintptr(ptr)+e.xOffset), value)
@@ -376,7 +373,6 @@ func (e *assignExpr) intTrackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	e.setMutation(ptr)
 	return nil
 }
-
 
 func (e *assignExpr) intAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	x := *(*int)(e.y.Compute(ptr))
@@ -416,7 +412,6 @@ func (e *assignExpr) boolAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	return nil
 }
 
-
 func (e *assignExpr) float64TrackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	x := *(*float64)(e.y.Compute(ptr))
 	upstream := e.x.Upstream(ptr)
@@ -437,7 +432,6 @@ func (e *assignExpr) errorAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	e.x.SetError(e.x.Upstream(ptr), *(*error)(e.y.Compute(ptr)))
 	return nil
 }
-
 
 func (e *assignExpr) assign(ptr unsafe.Pointer) unsafe.Pointer {
 	yPtr := e.y.Compute(ptr)

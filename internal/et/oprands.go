@@ -30,6 +30,15 @@ func (o Operands) pathway() exec.Pathway {
 	return result
 }
 
+func (o Operands) Validate() error {
+	if o[xOp].Type == nil || o[yOp].Type == nil {
+		return nil
+	}
+	if o[xOp].Type.Type() != o[yOp].Type.Type() {
+		return fmt.Errorf("incompatible operant types: %s %s", o[xOp].Type.Type().String(), o[yOp].Type.Type().String())
+	}
+	return nil
+}
 func (o Operands) directBinaryExpr() *directBinaryExpr {
 	expr := &directBinaryExpr{xOffset: o[xOp].Offset(), yOffset: o[yOp].Offset(), zOffset: o[zOp].Offset()}
 	return expr

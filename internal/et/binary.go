@@ -25,6 +25,10 @@ func NewBinaryExpr(op token.Token, operands ...*Operand) (New, reflect.Type) {
 	assignToken := op
 
 	return func(exec *Control) (internal.Compute, error) {
+		ops := Operands(operands)
+		if err := ops.Validate(); err != nil {
+			return nil, err
+		}
 		switch assignToken {
 		case token.REM:
 			return newRem(opType, operands, exec)

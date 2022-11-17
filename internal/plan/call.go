@@ -57,6 +57,18 @@ func (s *Scope) compileCallExprAssign(callExpr *ast.CallExpr, dest []*et.Operand
 
 var emptyInt16s = []uint16{}
 
+func (s *Scope) updateTrackerLen(sel *exec.Selector) {
+	if s.trackType == nil || (!strings.HasPrefix(sel.ID, s.trackRoot)) {
+		return
+	}
+	positions := sel.XPos()[1:] //skip root level
+	for _, pos := range positions {
+		if int(pos) > s.trackLen {
+			s.trackLen = int(pos)
+		}
+	}
+}
+
 func (s *Scope) trackerXPos(sel *exec.Selector) []uint16 {
 	if s.trackType == nil || (!strings.HasPrefix(sel.ID, s.trackRoot)) {
 		return emptyInt16s
@@ -88,7 +100,7 @@ func (s *Scope) compileCallExprSignature(callExpr *ast.CallExpr) (exec.Caller, [
 		retTypes[i] = funType.Out(i)
 	}
 
-	aCaller := asCaller(fn)
+	aCaller := exec.AsCaller(fn)
 	if aCaller == nil {
 		aCaller = newCaller(fn)
 	}

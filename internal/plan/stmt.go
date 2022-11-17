@@ -8,7 +8,15 @@ import (
 )
 
 func (s *Scope) compileStmt(stmt ast.Stmt) (et.New, error) {
-
+	if s.stmtListener != nil {
+		newStmt, err := s.stmtListener(stmt)
+		if err != nil {
+			return nil, err
+		}
+		if newStmt != nil {
+			stmt = newStmt
+		}
+	}
 	switch actual := stmt.(type) {
 	case *ast.AssignStmt:
 		s.Metric.FlagAssign()

@@ -1,114 +1,55 @@
 package exec
 
-import (
-	"reflect"
+//Tracker abstraction to track mutation
+type (
+	Tracker struct {
+		init     Uint64s
+		mutation Uint64s
+	}
 )
 
-
-//Tracker abstraction to track mutation
-type Tracker struct {
-	init     []uint64
-	Mutation []uint64
-	Nested   []*Tracker
+func (t *Tracker) Count() int {
+	return t.mutation.Count()
 }
-
 
 //Set sets mutation for filed pos
-func (t *Tracker) Set(pos []uint16) {
-	Uint64s(t.Mutation).SetBit(int(pos[0]))
-	if len(pos) > 1 {
-		t.Nested[pos[0]].Set(pos[1:])
+func (t *Tracker) Set(positions []uint16) {
+	if len(positions) == 0 {
+		return
+	}
+	for _, pos := range positions {
+		t.mutation.SetBit(int(pos))
 	}
 }
 
-
-//Changed returns true if changes
-func (t *Tracker) Changed(pos ...uint16) bool {
-	if len(pos) > 1 {
-		return t.Changed(pos[1:]...)
-	}
-	return Uint64s(t.Mutation).HasBit(int(pos[0]))
+//Any returns true if mask contain any changes
+func (t *Tracker) Any(mask Uint64s) bool {
+	return mask.Matches(t.mutation)
 }
 
+//Has returns true if changes
+func (t *Tracker) Has(pos uint16) bool {
+	return t.mutation.HasBit(pos)
+}
 
 //Reset reset modification status
 func (t *Tracker) Reset() {
-	copy(t.Mutation, t.init)
-	if len(t.Nested) == 0 {
-		return
-	}
-	for i := range t.Nested {
-		if t.Nested[i] == nil {
-			continue
-		}
-		t.Nested[i].Reset()
-	}
+	copy(t.mutation, t.init)
 }
 
 func (t *Tracker) Clone() *Tracker {
 	var result = &Tracker{
 		init:     t.init,
-		Mutation: make([]uint64, len(t.init)),
-		Nested:   make([]*Tracker, len(t.Nested)),
-	}
-	for i, item := range t.Nested {
-		if item == nil {
-			continue
-		}
-		result.Nested[i] = t.Nested[i].Clone()
+		mutation: make(Uint64s, len(t.init)),
 	}
 	return result
 }
 
 //NewTracker creates a tracker
-func NewTracker(target reflect.Type) *Tracker {
-	if target.Kind() == reflect.Ptr {
-		target = target.Elem()
-	}
-	if target.Kind() != reflect.Struct {
-		return nil
-	}
-	fieldCount := target.NumField()
+func NewTracker(maxPos int) *Tracker {
 	var result = &Tracker{
-		init:     make([]uint64, 1+fieldCount/64),
-		Mutation: make([]uint64, 1+fieldCount/64),
-		Nested:   make([]*Tracker, fieldCount),
-	}
-	for i := 0; i < fieldCount; i++ {
-		filed := target.Field(i)
-		fType := filed.Type
-		if fType.Kind() == reflect.Ptr {
-			fType = fType.Elem()
-		}
-		if fType.Kind() != reflect.Struct {
-			continue
-		}
-		result.Nested[i] = NewTracker(fType)
+		init:     make(Uint64s, index(maxPos)+1),
+		mutation: make(Uint64s, index(maxPos)+1),
 	}
 	return result
 }
-
-
-type Uint64s []uint64
-
-//HasBit returns true if a bit at position in set
-func (o Uint64s) HasBit(pos int) bool {
-	return o[index(pos)] & (1 << pos % 64) != 0
-}
-
-//ClearBit clears bit at position in set
-func (o Uint64s) ClearBit(pos int) {
-	o[index(pos)] &= ^(1 << (pos % 64))
-}
-
-//SetBit sets bit at position in set
-func (o Uint64s) SetBit(pos int) {
-	o[index(pos)] |= 1 << (pos % 64)
-}
-
-func index(pos int) int {
-	return pos / 64
-}
-
-
-

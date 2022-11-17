@@ -15,3 +15,23 @@ func (o Options) Tracker() *Tracker {
 	}
 	return nil
 }
+
+//StmtListener returns a stmt listener option or nil
+func (o Options) StmtListener() StmtListener {
+	for _, item := range o {
+		if t, ok := item.(StmtListener); ok {
+			return t
+		}
+	}
+	return nil
+}
+
+//ExprListener returns an expr listener option or nil
+func (o Options) ExprListener() ExprListener {
+	for _, item := range o {
+		if t, ok := item.(ExprListener); ok {
+			return t
+		}
+	}
+	return nil
+}

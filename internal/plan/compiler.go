@@ -6,7 +6,6 @@ import (
 	"github.com/viant/igo/internal/et"
 	"go/ast"
 	"go/parser"
-	"reflect"
 	"strings"
 	"sync"
 )
@@ -17,65 +16,40 @@ func (s *Scope) Function(expr string) (interface{}, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile: %s, %w", expr, err)
 	}
-	stateNew := exec.StateNew(s.mem.Type, *s.selectors, nil)
+	stateNew := exec.StateNew(s.mem.Type, *s.selectors, nil, nil)
+	pool := &sync.Pool{New: func() interface{} {
+		return stateNew()
+	}}
 	compute, err := newFn(&et.Control{Flow: s.Flow})
 	if err != nil {
 		return nil, err
 	}
-	execution := exec.NewExecution(compute)
-	execution.In = exec.Selectors(*s.in).IDs()
-	execution.Out = exec.Selectors(*s.out).IDs()
-	var in, out []reflect.Type
-	for i := range execution.In {
-		in = append(in, (*s.in)[i].Type)
-	}
-	for i := range execution.Out {
-		out = append(out, (*s.out)[i].Type)
-	}
-	fnType := reflect.FuncOf(in, out, false)
-	pool := sync.Pool{New: func() interface{} {
-		return stateNew()
-	}}
-	return reflect.MakeFunc(fnType, func(args []reflect.Value) (results []reflect.Value) {
-		state := pool.Get().(*exec.State)
-		for i, in := range execution.In {
-			if err := state.SetValue(in, args[i].Interface()); err != nil {
-				panic(err)
-			}
-		}
-		execution.Exec(state)
-		results = make([]reflect.Value, len(out))
-		for i, out := range execution.Out {
-			value, err := state.Value(out)
-			if err != nil {
-				panic(err)
-			}
-			results[i] = reflect.ValueOf(value)
-		}
-		pool.Put(state)
-		return results
-	}).Interface(), nil
+	execution := exec.NewExecution(compute, pool, *s.in, *s.out)
+	return execution.Func()
 }
 
 //Compile parses and compile simple golang expression into execution tree
-func (s *Scope) Compile(expr string) (*exec.Executor, exec.New, error) {
+func (s *Scope) Compile(expr string) (*exec.Executor, error) {
 	newFn, err := s.compile(expr)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to compile: %s, %w", expr, err)
+		return nil, fmt.Errorf("failed to compile: %s, %w", expr, err)
 	}
 	var tracker *exec.Tracker
 	if s.trackType != nil {
-		tracker = exec.NewTracker(s.trackType)
+		tracker = exec.NewTracker(s.trackLen)
 	}
-	variablesNew := exec.StateNew(s.mem.Type, *s.selectors, tracker)
+	pool := &sync.Pool{}
+	stateNew := exec.StateNew(s.mem.Type, *s.selectors, tracker, pool)
+
+	pool.New = func() interface{} {
+		return stateNew()
+	}
 	compute, err := newFn(&et.Control{Flow: s.Flow})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	result := exec.NewExecution(compute)
-	result.In = exec.Selectors(*s.in).IDs()
-	result.Out = exec.Selectors(*s.out).IDs()
-	return result, variablesNew, err
+	result := exec.NewExecution(compute, pool, *s.in, *s.out)
+	return result, err
 }
 
 func (s *Scope) compile(expr string) (et.New, error) {
@@ -107,7 +81,7 @@ func (s *Scope) assignParams(dest *[]*exec.Selector, fieldList *ast.FieldList) e
 
 func (s *Scope) compileFunction(code string) (*ast.FuncLit, error) {
 	codeExpr := code
-	if !strings.HasPrefix(code, "func") {
+	if !strings.HasPrefix(strings.TrimSpace(code), "func") {
 		codeExpr = `func() {` + code + `}`
 	}
 	tree, err := parser.ParseExpr(codeExpr)

@@ -10,8 +10,18 @@ import (
 func stringifyExpr(expr ast.Expr, depth int) string {
 	builder := strings.Builder{}
 	curr := 0
-	stringify(expr, &builder, &curr, depth)
+	if err := stringify(expr, &builder, &curr, depth); err != nil {
+		panic(err)
+	}
 	return builder.String()
+}
+
+//StringifyExpr returns sting representation of expression
+func (s *Scope) StringifyExpr(expr ast.Expr) (string, error) {
+	builder := strings.Builder{}
+	curr := 0
+	err := stringify(expr, &builder, &curr, 0)
+	return builder.String(), err
 }
 
 func isDepthReached(current *int, depth int) bool {
@@ -21,9 +31,9 @@ func isDepthReached(current *int, depth int) bool {
 	return *current >= depth
 }
 
-func stringify(expr ast.Expr, builder *strings.Builder, current *int, depth int) {
+func stringify(expr ast.Expr, builder *strings.Builder, current *int, depth int) error {
 	if isDepthReached(current, depth) {
-		return
+		return nil
 	}
 	switch actual := expr.(type) {
 	case *ast.BasicLit:
@@ -33,48 +43,62 @@ func stringify(expr ast.Expr, builder *strings.Builder, current *int, depth int)
 		builder.WriteString(actual.Name)
 		*current++
 	case *ast.IndexExpr:
-		stringify(actual.X, builder, current, depth)
+		if err := stringify(actual.X, builder, current, depth); err != nil {
+			return err
+		}
 		if isDepthReached(current, depth) {
-			return
+			return nil
 		}
 		builder.WriteString("[")
-		stringify(actual.Index, builder, current, depth)
+		if err := stringify(actual.Index, builder, current, depth); err != nil {
+			return err
+		}
 		builder.WriteString("]")
 	case *ast.SelectorExpr:
-		stringify(actual.X, builder, current, depth)
+		if err := stringify(actual.X, builder, current, depth); err != nil {
+			return err
+		}
 		if isDepthReached(current, depth) {
-			return
+			return nil
 		}
 		builder.WriteString(".")
-		stringify(actual.Sel, builder, current, depth)
+		return stringify(actual.Sel, builder, current, depth)
 	case *ast.ParenExpr:
 		builder.WriteString("(")
-		stringify(actual.X, builder, current, depth)
+		if err := stringify(actual.X, builder, current, depth); err != nil {
+			return err
+		}
 		builder.WriteString(")")
 	case *ast.CallExpr:
-		stringify(actual.Fun, builder, current, depth)
+		if err := stringify(actual.Fun, builder, current, depth); err != nil {
+			return err
+		}
 		builder.WriteString("(")
 		for i := 0; i < len(actual.Args); i++ {
 			if i > 0 {
 				builder.WriteString(",")
 			}
-			stringify(actual.Args[i], builder, current, depth)
+			if err := stringify(actual.Args[i], builder, current, depth); err != nil {
+				return err
+			}
 		}
 		builder.WriteString(")")
 	case *ast.BinaryExpr:
-		stringify(actual.X, builder, current, depth)
+		if err := stringify(actual.X, builder, current, depth); err != nil {
+			return err
+		}
 		builder.WriteString(actual.Op.String())
-		stringify(actual.Y, builder, current, depth)
+		return stringify(actual.Y, builder, current, depth)
 	case *ast.UnaryExpr:
 		builder.WriteString(actual.Op.String())
-		stringify(actual.X, builder, current, depth)
+		return stringify(actual.X, builder, current, depth)
 	case *ast.ArrayType:
-		stringify(actual.Elt, builder, current, depth)
+		return stringify(actual.Elt, builder, current, depth)
 	case *ast.StarExpr:
 		builder.WriteString("*")
-		stringify(actual.X, builder, current, depth)
-
+		return stringify(actual.X, builder, current, depth)
 	default:
-		panic(fmt.Sprintf("%T", actual))
+		return fmt.Errorf("unsupported node: %T", actual)
 	}
+	return nil
 }

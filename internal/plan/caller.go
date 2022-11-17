@@ -2,6 +2,7 @@ package plan
 
 import (
 	"github.com/viant/igo/exec"
+	_ "github.com/viant/igo/internal/signature"
 	"github.com/viant/xunsafe"
 	"reflect"
 	"unsafe"

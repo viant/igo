@@ -31,7 +31,6 @@ func (s *Scope) compileAssignStmt(assignStmt *ast.AssignStmt) (et.New, error) {
 
 func (s *Scope) compileAssign(left, right *et.Operand, assignToken token.Token, define bool) (et.New, error) {
 	switch assignToken {
-
 	case token.ADD_ASSIGN, token.SUB_ASSIGN, token.AND_ASSIGN, token.OR_ASSIGN, token.AND_NOT_ASSIGN, token.MUL_ASSIGN, token.REM_ASSIGN, token.QUO_ASSIGN:
 		z, _ := s.newTransient()
 		opZ := &et.Operand{Selector: z}

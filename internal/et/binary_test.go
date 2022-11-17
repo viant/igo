@@ -40,7 +40,7 @@ func (c binaryTestCase) init() (*exec.State, internal.Compute, error) {
 	destType := reflect.StructOf([]reflect.StructField{
 		x, y, z,
 	})
-	stateNew := exec.StateNew(destType, nil)
+	stateNew := exec.StateNew(destType, nil, nil)
 	state := stateNew()
 	xSel, _ := state.Selector("X")
 	ySel, _ := state.Selector("Y")

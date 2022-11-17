@@ -10,8 +10,8 @@ type Scope struct {
 	*plan.Scope
 }
 
-func (s *Scope) SubScope() *Scope {
-	return &Scope{Scope: s.Scope.SubScope()}
+func (s *Scope) SubScope(options ...option.Option) *Scope {
+	return &Scope{Scope: s.Scope.SubScope(options...)}
 }
 
 //NewScope creates a scope

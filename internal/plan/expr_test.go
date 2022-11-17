@@ -24,6 +24,7 @@ func TestScope_IntExpression(t *testing.T) {
 			state:       map[string]interface{}{"x": 10, "y": 20},
 			expect:      30,
 		},
+
 		{
 			description: "basic subtraction",
 			expr:        "x-y",
@@ -161,6 +162,18 @@ func TestScope_BoolExpression(t *testing.T) {
 			expr:        `name != ""`,
 			state:       map[string]interface{}{"name": "abc"},
 			expect:      true,
+		},
+		{
+			description: "bool addition",
+			expr:        "(x < y)",
+			state:       map[string]interface{}{"x": 10, "y": 20},
+			expect:      true,
+		},
+		{
+			description: "bool addition",
+			expr:        "! (x < y)",
+			state:       map[string]interface{}{"x": 10, "y": 20},
+			expect:      false,
 		},
 	}
 

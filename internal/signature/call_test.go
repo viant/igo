@@ -1,8 +1,9 @@
-package plan
+package signature
 
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/viant/igo/exec"
 	"testing"
 )
 
@@ -27,7 +28,7 @@ func TestIiiCaller_Call(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		caller := asCaller(testCase.fn)
+		caller := exec.AsCaller(testCase.fn)
 		assert.NotNil(t, caller, testCase.description)
 	}
 

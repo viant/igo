@@ -1,11 +1,22 @@
-package plan
+package signature
 
 import (
 	"github.com/viant/igo/exec"
 	"github.com/viant/xunsafe"
-	"reflect"
 	"unsafe"
 )
+
+type fnV func()
+
+func (f fnV) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
+	f()
+	return nil
+}
+
+func (f fnV) New(e *exec.Executor) interface{} {
+	var adapter = &adapter{Executor: e}
+	return adapter.fnV
+}
 
 type iiiFn func(int, int) int
 
@@ -14,6 +25,11 @@ func (f iiiFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	y := xunsafe.AsInt(args[1].Compute(ptr))
 	z := f(x, y)
 	return unsafe.Pointer(&z)
+}
+
+func (f iiiFn) New(e *exec.Executor) interface{} {
+	var adapter = &adapter{Executor: e}
+	return adapter.iiiFn
 }
 
 type f64f64f64Fn func(float64, float64) float64
@@ -25,14 +41,23 @@ func (f f64f64f64Fn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Point
 	return unsafe.Pointer(&z)
 }
 
-type ssFn func(string, string) string
+func (f f64f64f64Fn) New(e *exec.Executor) interface{} {
+	var adapter = &adapter{Executor: e}
+	return adapter.f64f64f64Fn
+}
 
-func (f ssFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
+type sssFn func(string, string) string
+
+func (f sssFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	x := xunsafe.AsString(args[0].Compute(ptr))
 	y := xunsafe.AsString(args[1].Compute(ptr))
 	z := f(x, y)
 	return unsafe.Pointer(&z)
+}
 
+func (f sssFn) New(e *exec.Executor, initPairs ...interface{}) interface{} {
+	var adapter = &adapter{e}
+	return adapter.sssFn
 }
 
 type svrFn func(string, ...interface{})
@@ -103,7 +128,7 @@ func (f svrieFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 type vrieFn func(...interface{}) (int, error)
 
 func (f vrieFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
-	v :=0
+	v := 0
 	i := &v
 	var vErr error
 	err := &vErr
@@ -238,34 +263,4 @@ func (f vvsvFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 		result = f(x, y...)
 	}
 	return xunsafe.AsPointer(result)
-}
-
-var buildInCallerTypes = []reflect.Type{
-	reflect.TypeOf(new(iiiFn)).Elem(),
-	reflect.TypeOf(new(f64f64f64Fn)).Elem(),
-	reflect.TypeOf(new(ssFn)).Elem(),
-	reflect.TypeOf(new(svrFn)).Elem(),
-	reflect.TypeOf(new(svrs)).Elem(),
-	reflect.TypeOf(new(viFn)).Elem(),
-	reflect.TypeOf(new(vf64Fn)).Elem(),
-	reflect.TypeOf(new(vf32Fn)).Elem(),
-	reflect.TypeOf(new(vbFn)).Elem(),
-	reflect.TypeOf(new(vsFn)).Elem(),
-	reflect.TypeOf(new(svrieFn)).Elem(),
-	reflect.TypeOf(new(vvsvFn)).Elem(),
-	reflect.TypeOf(new(vrieFn)).Elem(),
-}
-
-func asCaller(fn interface{}) exec.Caller {
-	if caller, ok := fn.(exec.Caller); ok {
-		return caller
-	}
-	fnValue := reflect.ValueOf(fn)
-	for _, candidate := range buildInCallerTypes {
-		if fnValue.CanConvert(candidate) {
-			res := fnValue.Convert(candidate).Interface()
-			return res.(exec.Caller)
-		}
-	}
-	return nil
 }

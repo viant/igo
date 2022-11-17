@@ -12,30 +12,33 @@ import (
 //Scope represents compilation scope
 type Scope struct {
 	*et.Control
-	Metric     metric.Stmt
-	execType   interface{}
-	count      *int
-	upstream   []string
-	prefix     string
-	selectors  *[]*exec.Selector
-	index      map[string]uint16
-	types      map[string]reflect.Type
-	funcs      map[string]interface{}
-	out        *[]*exec.Selector
-	in         *[]*exec.Selector
-	transients *int
-	mem        *memType
-	trackType  reflect.Type
-	trackRoot  string
+	Metric       metric.Stmt
+	execType     interface{}
+	count        *int
+	upstream     []string
+	prefix       string
+	selectors    *[]*exec.Selector
+	index        map[string]uint16
+	types        map[string]reflect.Type
+	funcs        map[string]interface{}
+	out          *[]*exec.Selector
+	in           *[]*exec.Selector
+	transients   *int
+	mem          *memType
+	trackType    reflect.Type
+	trackLen     int
+	trackRoot    string
+	stmtListener option.StmtListener
+	exprListener option.ExprListener
 }
 
-func (s *Scope) SubScope() *Scope {
+func (s *Scope) SubScope(options ...option.Option) *Scope {
 	*s.count++
 	var types = make(map[string]reflect.Type)
 	for k, v := range s.types {
 		types[k] = v
 	}
-	return &Scope{
+	result := &Scope{
 		Control:    s.Control,
 		upstream:   append(s.upstream, s.prefix),
 		prefix:     "s" + strconv.Itoa(*s.count),
@@ -49,7 +52,17 @@ func (s *Scope) SubScope() *Scope {
 		out:        s.out,
 		transients: s.transients,
 		trackType:  s.trackType,
+		Metric:     s.Metric,
 	}
+	if len(options) > 0 {
+		if listener := option.Options(options).ExprListener(); listener != nil {
+			result.exprListener = listener
+		}
+		if listener := option.Options(options).StmtListener(); listener != nil {
+			result.stmtListener = listener
+		}
+	}
+	return result
 }
 
 func (s *Scope) setTracker(tracker *option.Tracker) error {
@@ -79,6 +92,8 @@ func NewScope(options ...option.Option) *Scope {
 		mem.addField("_trk", reflect.TypeOf(&exec.Tracker{}))
 	}
 	ret := newScope(mem)
+	ret.exprListener = option.Options(options).ExprListener()
+	ret.stmtListener = option.Options(options).StmtListener()
 	err := ret.setTracker(tracker)
 	if err != nil {
 		panic(err)

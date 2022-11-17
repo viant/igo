@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/viant/xunsafe"
 	"reflect"
+	"sync"
 	"unsafe"
 )
 
@@ -17,62 +18,74 @@ type State struct {
 	value     interface{}
 	index     map[string]uint16
 	selectors []*Selector
+	pool      *sync.Pool
 }
 
 //Pointer returns variables pointer
-func (v *State) Pointer() unsafe.Pointer {
-	return v.pointer
+func (s *State) Pointer() unsafe.Pointer {
+	return s.pointer
 }
 
+func (s *State) Release() {
+	if s.pool == nil {
+		return
+	}
+	s.pool.Put(s)
+
+}
+
+func (s *State) Interface() interface{} {
+	return s.value
+}
 
 //SetValue sets value for
-func (v *State) SetValue(name string, value interface{}) error {
-	sel, err := v.Selector(name)
+func (s *State) SetValue(name string, value interface{}) error {
+	sel, err := s.Selector(name)
 	if err != nil {
 		return err
 	}
-	sel.SetValue(sel.Upstream(v.pointer), value)
+	sel.SetValue(sel.Upstream(s.pointer), value)
 	return nil
 }
 
 //SetValueAt set values at position
-func (v *State) SetValueAt(idx int, value interface{}) {
-	sel := v.selectors[idx]
-	sel.SetValue(sel.Upstream(v.pointer), value)
+func (s *State) SetValueAt(idx int, value interface{}) {
+	sel := s.selectors[idx]
+	sel.SetValue(sel.Upstream(s.pointer), value)
 }
 
 //ValueAt returns value for variable index
-func (v *State) ValueAt(idx int) interface{} {
-	sel := v.selectors[idx]
-	return sel.Interface(sel.Upstream(v.pointer))
+func (s *State) ValueAt(idx int) interface{} {
+	sel := s.selectors[idx]
+	return sel.Interface(sel.Upstream(s.pointer))
 }
 
 //Value returns value for supplied name or error
-func (v *State) Value(name string) (interface{}, error) {
-	sel, err := v.Selector(name)
+func (s *State) Value(name string) (interface{}, error) {
+	sel, err := s.Selector(name)
 	if err != nil {
 		return nil, err
 	}
-	return sel.Interface(sel.Upstream(v.pointer)), nil
+	return sel.Interface(sel.Upstream(s.pointer)), nil
 }
 
 //SetInt set int value
-func (v *State) SetInt(name string, value int) error {
-	sel, err := v.Selector(name)
+func (s *State) SetInt(name string, value int) error {
+	sel, err := s.Selector(name)
 	if err != nil {
 		return err
 	}
 	if sel.Pathway == PathwayDirect {
-		sel.SetInt(v.pointer, value)
+		sel.SetInt(s.pointer, value)
 		return nil
 	}
-	sel.SetInt(sel.Upstream(v.pointer), value)
+	sel.SetInt(sel.Upstream(s.pointer), value)
 	return nil
 }
 
 //Index returns variable index for specified name
-func (v *State) Index(name string) (int, error) {
-	sel, err := v.Selector(name)
+func (s *State) Index(name string) (int, error) {
+	sel, err := s.Selector(name)
 	if err != nil {
 		return 0, err
 	}
@@ -80,99 +93,99 @@ func (v *State) Index(name string) (int, error) {
 }
 
 //Int returns int or error for supplied variable name
-func (v *State) Int(name string) (int, error) {
-	sel, err := v.Selector(name)
+func (s *State) Int(name string) (int, error) {
+	sel, err := s.Selector(name)
 	if err != nil {
 		return 0, err
 	}
-	return sel.Int(sel.Upstream(v.pointer)), nil
+	return sel.Int(sel.Upstream(s.pointer)), nil
 }
 
 //SetString set value for supplied variable name or error if variable name is invalid
-func (v *State) SetString(name string, value string) error {
-	sel, err := v.Selector(name)
+func (s *State) SetString(name string, value string) error {
+	sel, err := s.Selector(name)
 	if err != nil {
 		return err
 	}
-	sel.SetString(sel.Upstream(v.pointer), value)
+	sel.SetString(sel.Upstream(s.pointer), value)
 	return nil
 }
 
 //SetStringAt set value for supplied variable index
-func (v *State) SetStringAt(index int, value string) error {
-	sel := v.selectors[index]
-	sel.SetString(sel.Upstream(v.pointer), value)
+func (s *State) SetStringAt(index int, value string) error {
+	sel := s.selectors[index]
+	sel.SetString(sel.Upstream(s.pointer), value)
 	return nil
 }
 
 //String set string value for supplied variable name or error if variable name is invalid
-func (v *State) String(name string) (string, error) {
-	sel, err := v.Selector(name)
+func (s *State) String(name string) (string, error) {
+	sel, err := s.Selector(name)
 	if err != nil {
 		return "", err
 	}
-	return sel.String(sel.Upstream(v.pointer)), nil
+	return sel.String(sel.Upstream(s.pointer)), nil
 }
 
 //SetBool set boolean value for supplied variable name or error if variable name is invalid
-func (v *State) SetBool(name string, value bool) error {
-	sel, err := v.Selector(name)
+func (s *State) SetBool(name string, value bool) error {
+	sel, err := s.Selector(name)
 	if err != nil {
 		return err
 	}
-	sel.SetBool(sel.Upstream(v.pointer), value)
+	sel.SetBool(sel.Upstream(s.pointer), value)
 	return nil
 }
 
 //Bool returns boolean value or error for supplied variable name
-func (v *State) Bool(name string) (bool, error) {
-	sel, err := v.Selector(name)
+func (s *State) Bool(name string) (bool, error) {
+	sel, err := s.Selector(name)
 	if err != nil {
 		return false, err
 	}
-	return sel.Bool(sel.Upstream(v.pointer)), nil
+	return sel.Bool(sel.Upstream(s.pointer)), nil
 }
 
 //SetBoolAt set boolean value at selor position
-func (v *State) SetBoolAt(idx int, value bool) {
-	sel := v.selectors[idx]
-	sel.SetBool(sel.Upstream(v.pointer), value)
+func (s *State) SetBoolAt(idx int, value bool) {
+	sel := s.selectors[idx]
+	sel.SetBool(sel.Upstream(s.pointer), value)
 }
 
 //SetFloat64 set float64 value for supplied variable name or error if variable name is invalid
-func (v *State) SetFloat64(name string, value float64) error {
-	sel, err := v.Selector(name)
+func (s *State) SetFloat64(name string, value float64) error {
+	sel, err := s.Selector(name)
 	if err != nil {
 		return err
 	}
-	sel.SetFloat64(sel.Upstream(v.pointer), value)
+	sel.SetFloat64(sel.Upstream(s.pointer), value)
 	return nil
 }
 
 //Float64 returns float64 value or error for supplied variable name
-func (v *State) Float64(name string) (float64, error) {
-	sel, err := v.Selector(name)
+func (s *State) Float64(name string) (float64, error) {
+	sel, err := s.Selector(name)
 	if err != nil {
 		return 0.0, err
 	}
-	return sel.Float64(sel.Upstream(v.pointer)), nil
+	return sel.Float64(sel.Upstream(s.pointer)), nil
 }
 
 //Selector returns selector for a supploed name or error
-func (v *State) Selector(name string) (*Selector, error) {
-	idx, ok := v.index[name]
+func (s *State) Selector(name string) (*Selector, error) {
+	idx, ok := s.index[name]
 	if !ok {
-		return nil, fmt.Errorf("undefined %v", name)
+		return nil, fmt.Errorf("undefined %s", name)
 	}
-	return v.selectors[idx], nil
+	return s.selectors[idx], nil
 }
 
-func (v *State) Tracker() *Tracker {
-	return v.tracker
+func (s *State) Tracker() *Tracker {
+	return s.tracker
 }
 
 //StateNew creates variables
-func StateNew(dest reflect.Type, selectors []*Selector, tracker *Tracker) New {
+func StateNew(dest reflect.Type, selectors []*Selector, tracker *Tracker, pool *sync.Pool) New {
 	var index = make(map[string]uint16)
 	if len(selectors) == 0 {
 		fields := xunsafe.NewStruct(dest).Fields
@@ -191,10 +204,10 @@ func StateNew(dest reflect.Type, selectors []*Selector, tracker *Tracker) New {
 			trueSelPos = int(sel.Pos)
 		}
 	}
-
 	return func() *State {
 		value := reflect.New(dest).Interface()
 		ret := &State{
+			pool:      pool,
 			pointer:   xunsafe.AsPointer(value),
 			value:     value,
 			index:     index,
@@ -202,7 +215,7 @@ func StateNew(dest reflect.Type, selectors []*Selector, tracker *Tracker) New {
 		}
 		if tracker != nil {
 			ret.tracker = tracker.Clone()
-			*(**Tracker)(unsafe.Pointer(uintptr(ret.pointer) +  8)) = ret.tracker
+			*(**Tracker)(unsafe.Pointer(uintptr(ret.pointer) + 8)) = ret.tracker
 		}
 		if trueSelPos != -1 {
 			ret.SetBoolAt(trueSelPos, true)

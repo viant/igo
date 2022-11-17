@@ -5,7 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/traefik/yaegi/interp"
 	"github.com/viant/igo/exec"
-	"github.com/viant/igo/internal/expr"
+	"github.com/viant/igo/exec/expr"
 	"github.com/viant/igo/internal/plan"
 	"github.com/xtaci/goeval"
 	"reflect"
@@ -38,13 +38,12 @@ var benchLoopCode = `
 func initForBench() {
 
 	scope := plan.NewScope()
-	var newVars exec.New
 	var err error
-	benchExecution, newVars, err = scope.Compile(benchLoopCode)
+	benchExecution, err = scope.Compile(benchLoopCode)
 	if err != nil {
 		panic(err)
 	}
-	benchVars = newVars()
+	benchVars = benchExecution.NewState()
 
 }
 
@@ -128,9 +127,8 @@ var benchLoopIgoVars *exec.State
 func initLoopIgo() {
 	scope := plan.NewScope()
 	scope.RegisterFunc("print", testPrintln)
-	var stateNew exec.New
 	var err error
-	benchLoopIgo, stateNew, err = scope.Compile(`count :=0
+	benchLoopIgo, err = scope.Compile(`count :=0
 for i :=0;i<100;i++ {
 	count += i
 }
@@ -139,7 +137,7 @@ print(count)
 	if err != nil {
 		panic(err)
 	}
-	benchLoopIgoVars = stateNew()
+	benchLoopIgoVars = benchLoopIgo.NewState()
 }
 
 var benchIntNativeExpr func(x, y, z int) int

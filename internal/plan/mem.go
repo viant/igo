@@ -23,6 +23,16 @@ func (t *memType) embedField(name string, fType reflect.Type) *xunsafe.Field {
 	return result
 }
 
+func (t *memType) updateField(name string, fType reflect.Type) {
+	for i, f := range t.fields {
+		if f.Name == name {
+			t.fields[i].Type = fType
+			break
+		}
+	}
+	t.Type = reflect.StructOf(t.fields)
+}
+
 func (t *memType) addField(name string, fType reflect.Type) *xunsafe.Field {
 	pkg := ""
 	if name[0] > 'Z' {

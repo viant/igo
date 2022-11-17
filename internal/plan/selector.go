@@ -37,7 +37,7 @@ func (s *Scope) lookup(expr string) *exec.Selector {
 	return nil
 }
 
-//ResolveSelector returns existing or regsterSelector selector to the scope
+//ResolveSelector returns existing or registerSelector selector to the scope
 func (s *Scope) ResolveSelector(selector string) (*exec.Selector, error) {
 	if sel := s.lookup(selector); sel != nil {
 		return sel, nil
@@ -72,6 +72,7 @@ func (s *Scope) DefineEmbedVariable(name string, t reflect.Type) error {
 	return nil
 }
 
+//
 //DefineVariable defines variables
 func (s *Scope) DefineVariable(name string, fType reflect.Type) (*exec.Selector, error) {
 	id := s.varID(name)
@@ -79,6 +80,27 @@ func (s *Scope) DefineVariable(name string, fType reflect.Type) (*exec.Selector,
 		return nil, fmt.Errorf("variable %v already defined", fType.Name())
 	}
 	sel := &exec.Selector{Field: &xunsafe.Field{Name: s.varName(name), Type: fType}, ID: id}
+	if fType != nil {
+		_ = s.RegisterType(fType)
+	}
+	sel.Ancestors = []*exec.Selector{}
+	var err error
+	if fType != nil {
+		err = s.appendSelector(sel)
+	}
+	return sel, err
+}
+
+//UpdateVariable updated variable type
+func (s *Scope) UpdateVariable(name string, fType reflect.Type) (*exec.Selector, error) {
+	id := s.varID(name)
+	sel := s.lookup(id)
+	if sel != nil {
+		s.mem.updateField(name, fType)
+		sel.Type = fType
+		return sel, nil
+	}
+	sel = &exec.Selector{Field: &xunsafe.Field{Name: s.varName(name), Type: fType}, ID: id}
 	if fType != nil {
 		_ = s.RegisterType(fType)
 	}
@@ -152,7 +174,7 @@ func (s *Scope) addSelector(parent *exec.Selector, expr ast.Expr) (*exec.Selecto
 	case *ast.Ident:
 		sel.Field = xunsafe.FieldByName(parent.Type, actual.Name)
 		if sel.Field == nil {
-			return nil, fmt.Errorf("failed to lookup %v", actual.Name)
+			return nil, fmt.Errorf("failed to lookup %v.%v", sel.Name, actual.Name)
 		}
 		sel.ID = parent.ID + "." + sel.Name
 		err = s.appendSelector(sel)
@@ -223,14 +245,15 @@ func (s *Scope) appendSelector(sel *exec.Selector) error {
 		}
 	}
 	sel.IsErrorType = sel.Type.ConvertibleTo(errType)
-	s.regsterSelector(sel)
+	s.registerSelector(sel)
 	return nil
 }
 
-func (s *Scope) regsterSelector(sel *exec.Selector) {
+func (s *Scope) registerSelector(sel *exec.Selector) {
 	index := len(*s.selectors)
 	s.index[sel.ID] = uint16(index)
 	sel.Pos = uint16(index)
+	s.updateTrackerLen(sel)
 	*s.selectors = append(*s.selectors, sel)
 }
 
