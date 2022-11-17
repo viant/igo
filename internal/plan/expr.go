@@ -23,8 +23,7 @@ func (s *Scope) IntExpression(exprStmt string) (*expr.Int, error) {
 	if err != nil {
 		return nil, err
 	}
-	variables := variablesNew()
-	return expr.NewInt(variables, compute), nil
+	return expr.NewInt(variablesNew, compute), nil
 }
 
 //BoolExpression returns  bool expression
@@ -41,8 +40,7 @@ func (s *Scope) BoolExpression(exprStmt string) (*expr.Bool, error) {
 	if err != nil {
 		return nil, err
 	}
-	variables := variablesNew()
-	return expr.NewBool(variables, compute), nil
+	return expr.NewBool(variablesNew, compute), nil
 }
 
 //Float64Expression returns  float64 expression
@@ -59,8 +57,7 @@ func (s *Scope) Float64Expression(exprStmt string) (*expr.Float64, error) {
 	if err != nil {
 		return nil, err
 	}
-	variables := variablesNew()
-	return expr.NewFloat64(variables, compute), nil
+	return expr.NewFloat64(variablesNew, compute), nil
 }
 
 //StringExpression returns  string expression
@@ -77,8 +74,7 @@ func (s *Scope) StringExpression(exprStmt string) (*expr.String, error) {
 	if err != nil {
 		return nil, err
 	}
-	variables := variablesNew()
-	return expr.NewString(variables, compute), nil
+	return expr.NewString(variablesNew, compute), nil
 }
 
 //compileExprStmt parses and compile expression
