@@ -34,6 +34,13 @@ func (o *Operand) Compute(control *Control) (internal.Compute, *exec.Selector, e
 	return nil, nil, nil
 }
 
+func (o *Operand) IsNilSelector() bool {
+	if sel := o.Selector; sel != nil && sel.ID == "nil" {
+		return true
+	}
+	return false
+}
+
 //NewOperand create an operand
 func (o *Operand) NewOperand(control *Control) (*exec.Operand, error) {
 	var err error
@@ -75,14 +82,9 @@ func (o *Operand) ensureNilType(y *Operand) {
 		if o.Type == nil {
 			o.Type = y.Type
 		}
-		ptr := reflect.New(y.Type.Type())
-		if ptr.IsZero() {
-			o.Value = ptr.Interface()
-			o.ValuePtr = unsafe.Pointer(ptr.Pointer())
-		} else {
-			o.Value = ptr.Elem().Interface()
-			o.ValuePtr = unsafe.Pointer(ptr.Pointer())
-		}
+		var ptr = unsafe.Pointer(nil)
+		o.ValuePtr = unsafe.Pointer(&ptr)
+
 		o.Selector = nil
 	}
 }

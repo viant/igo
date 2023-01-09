@@ -310,7 +310,7 @@ r := 0
 			description: "for statement with break",
 			code: `i := 0
 			for z :=0;z<20; {
-				i++
+				i++										
 				if i > 10 {
 					break
 				}
@@ -467,7 +467,8 @@ r := 0
 		},
 	}
 
-	for _, testCase := range testCases {
+	for i, testCase := range testCases {
+		fmt.Printf("[%v]: %v\n", i, testCase.code)
 		if testCase.scope == nil {
 			testCase.scope = NewScope()
 		}

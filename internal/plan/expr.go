@@ -28,6 +28,10 @@ func (s *Scope) IntExpression(exprStmt string) (*expr.Int, error) {
 
 //BoolExpression returns  bool expression
 func (s *Scope) BoolExpression(exprStmt string) (*expr.Bool, error) {
+	sel, _ := s.DefineVariable("_boolExpr", reflect.TypeOf(true))
+	output := []*exec.Selector{sel}
+	s.out = &output
+
 	exprNew, exprType, err := s.compileExprStmt(exprStmt)
 	if err != nil {
 		return nil, err
@@ -36,7 +40,8 @@ func (s *Scope) BoolExpression(exprStmt string) (*expr.Bool, error) {
 		return nil, fmt.Errorf("invalid expression type: %v", exprType.String())
 	}
 	variablesNew := exec.StateNew(s.mem.Type, *s.selectors, nil, nil)
-	compute, err := exprNew(&et.Control{})
+	control := *s.Control
+	compute, err := exprNew(&control)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +58,8 @@ func (s *Scope) Float64Expression(exprStmt string) (*expr.Float64, error) {
 		return nil, fmt.Errorf("invalid expression type: %v", exprType.String())
 	}
 	variablesNew := exec.StateNew(s.mem.Type, *s.selectors, nil, nil)
-	compute, err := exprNew(&et.Control{})
+	control := *s.Control
+	compute, err := exprNew(&control)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +76,8 @@ func (s *Scope) StringExpression(exprStmt string) (*expr.String, error) {
 		return nil, fmt.Errorf("invalid expression type: %v", exprType.String())
 	}
 	variablesNew := exec.StateNew(s.mem.Type, *s.selectors, nil, nil)
-	compute, err := exprNew(&et.Control{})
+	control := *s.Control
+	compute, err := exprNew(&control)
 	if err != nil {
 		return nil, err
 	}
@@ -84,10 +91,11 @@ func (s *Scope) compileExprStmt(expr string) (et.New, reflect.Type, error) {
 		return nil, nil, err
 	}
 	stmt, ok := fn.Body.List[0].(*ast.ExprStmt)
-	if !ok {
-		return nil, nil, fmt.Errorf("expected %T, but had %T", stmt, fn.Body.List[0])
+	if ok {
+		return s.compileExpr(stmt.X)
 	}
-	return s.compileExpr(stmt.X)
+	newFn, err := s.compileBlockStmt(fn.Body, true)
+	return newFn, reflect.TypeOf(true), err
 }
 
 func (s *Scope) compileExpr(expr ast.Expr) (et.New, reflect.Type, error) {
@@ -118,6 +126,9 @@ func (s *Scope) compileExpr(expr ast.Expr) (et.New, reflect.Type, error) {
 		return newFn, rType, nil
 	case *ast.UnaryExpr:
 		return s.compileUnaryExpr(z)
+	case *ast.StarExpr:
+		return s.compileUnaryStarExpr(z)
+
 	case *ast.CompositeLit:
 		return s.compileCompositeLiteral(0, z)
 	}

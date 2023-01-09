@@ -1,6 +1,7 @@
 package et
 
 import (
+	"fmt"
 	"github.com/viant/igo/exec"
 	"github.com/viant/igo/internal"
 	"github.com/viant/xunsafe"
@@ -20,12 +21,13 @@ type rangeStmt struct {
 func (s *rangeStmt) computeRange(ptr unsafe.Pointer) unsafe.Pointer {
 	slicePtr := s.x.Compute(ptr)
 	s.slice.Range(slicePtr, func(index int, item interface{}) bool {
+		fmt.Printf("%T %v\n", item, item, s.isComponentPtr)
 		*(*int)(s.key.Addr(ptr)) = index
 		if s.value != nil {
 			itemPtr := xunsafe.AsPointer(item)
-			if s.isComponentPtr {
-				itemPtr = xunsafe.DerefPointer(itemPtr)
-			}
+			//if s.isComponentPtr {
+			//itemPtr = xunsafe.DerefPointer(itemPtr)
+			//}
 			*(*unsafe.Pointer)(s.value.Addr(ptr)) = itemPtr
 		}
 		s.body(ptr)

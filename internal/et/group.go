@@ -121,6 +121,7 @@ func (b *groupStmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 //NewGroupStmt crates group node
 func NewGroupStmt(newStatementsFn []New, stmt bool) New {
 	return func(control *Control) (internal.Compute, error) {
+
 		var stmts = make([]internal.Compute, len(newStatementsFn))
 		var err error
 		for i := range newStatementsFn {

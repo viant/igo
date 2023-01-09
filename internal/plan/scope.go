@@ -122,5 +122,7 @@ func newScope(mem *memType) *Scope {
 		in:         &params,
 	}
 	_, _ = s.DefineVariable("true", reflect.TypeOf(true))
+	_, _ = s.DefineVariable("false", reflect.TypeOf(true))
+
 	return s
 }

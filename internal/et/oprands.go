@@ -30,6 +30,17 @@ func (o Operands) pathway() exec.Pathway {
 	return result
 }
 
+func (o Operands) HasNil() bool {
+	return o[xOp].IsNilSelector() || o[yOp].IsNilSelector()
+}
+
+func (o Operands) NonNilOperand() *Operand {
+	if o[xOp].IsNilSelector() {
+		return o[yOp]
+	}
+	return o[xOp]
+}
+
 func (o Operands) Validate() error {
 	if o[xOp].Type == nil || o[yOp].Type == nil {
 		return nil

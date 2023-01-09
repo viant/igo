@@ -77,9 +77,10 @@ func (s *Selector) Addr(pointer unsafe.Pointer) unsafe.Pointer {
 		ret = s.Slice.PointerAt(ptr, uintptr(idx))
 	} else {
 		ret = unsafe.Pointer(uintptr(s.Upstream(pointer)) + s.Field.Offset)
-		if s.Kind() == reflect.Ptr {
-			ret = xunsafe.DerefPointer(ret)
-		}
+		//mey break some func ,
+		//if s.Kind() == reflect.Ptr && s.Elem().Kind() == reflect.Struct {
+		//	ret = xunsafe.DerefPointer(ret)
+		//}
 	}
 	return ret
 }

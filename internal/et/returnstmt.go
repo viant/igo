@@ -76,6 +76,7 @@ func (s *returnStmt) computeR4(ptr unsafe.Pointer) unsafe.Pointer {
 //NewReturnStmt creates a return stmt
 func NewReturnStmt(retOperands Operands, results []*exec.Selector) (New, error) {
 	return func(control *Control) (internal.Compute, error) {
+
 		operands, err := retOperands.operands(control)
 		if err != nil {
 			return nil, err

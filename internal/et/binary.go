@@ -60,11 +60,11 @@ func NewBinaryExpr(op token.Token, operands ...*Operand) (New, reflect.Type) {
 			return newShr(opType, operands, exec)
 		case token.SHL:
 			return newShl(opType, operands, exec)
-		case token.AND:
+		case token.AND, token.LAND:
 			return newAnd(opType, operands, exec)
 		case token.AND_ASSIGN:
 			return newAndAssign(opType, operands, exec)
-		case token.OR:
+		case token.OR, token.LOR:
 			return newOr(opType, operands, exec)
 		case token.OR_ASSIGN:
 			return newOrAssign(opType, operands, exec)
@@ -86,10 +86,15 @@ func NewBinaryExpr(op token.Token, operands ...*Operand) (New, reflect.Type) {
 }
 
 func newEql(operands Operands, control *Control) (internal.Compute, error) {
+
 	cmp, err := newComparison(operands, control)
 	if err != nil {
 		return nil, err
 	}
+	if operands.HasNil() {
+		return cmp.NilEql, nil
+	}
+
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		return cmp.DirectEql, nil
@@ -100,6 +105,13 @@ func newEql(operands Operands, control *Control) (internal.Compute, error) {
 
 func newNeq(operands Operands, control *Control) (internal.Compute, error) {
 	cmp, err := newComparison(operands, control)
+	if err != nil {
+		return nil, err
+	}
+	if operands.HasNil() {
+		return cmp.NilNeq, nil
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -666,9 +678,25 @@ type comparison struct {
 	y *exec.Operand
 }
 
+func (e *comparison) NilEql(ptr unsafe.Pointer) unsafe.Pointer {
+	x := e.x.Compute(ptr)
+	if x == nil || *(*unsafe.Pointer)(x) == nil {
+		return trueValuePointer
+	}
+	return falseValuePointer
+}
+
+func (e *comparison) NilNeq(ptr unsafe.Pointer) unsafe.Pointer {
+	x := e.x.Compute(ptr)
+	if x != nil && *(*unsafe.Pointer)(x) != nil {
+		return trueValuePointer
+	}
+	return falseValuePointer
+}
+
 func (e *comparison) DirectEql(ptr unsafe.Pointer) unsafe.Pointer {
-	x := e.x.Interface(e.x.Compute(ptr))
-	y := e.y.Interface(e.y.Compute(ptr))
+	x := e.x.Value(e.x.Compute(ptr))
+	y := e.y.Value(e.y.Compute(ptr))
 	result := falseValuePointer
 	if x == y {
 		result = trueValuePointer
@@ -677,8 +705,8 @@ func (e *comparison) DirectEql(ptr unsafe.Pointer) unsafe.Pointer {
 }
 
 func (e *comparison) DirectNeq(ptr unsafe.Pointer) unsafe.Pointer {
-	x := e.x.Interface(e.x.Compute(ptr))
-	y := e.y.Interface(e.y.Compute(ptr))
+	x := e.x.Value(e.x.Compute(ptr))
+	y := e.y.Value(e.y.Compute(ptr))
 	result := falseValuePointer
 	if x != y {
 		result = trueValuePointer
@@ -687,8 +715,8 @@ func (e *comparison) DirectNeq(ptr unsafe.Pointer) unsafe.Pointer {
 }
 
 func (e *comparison) Eql(ptr unsafe.Pointer) unsafe.Pointer {
-	x := e.x.Interface(e.x.Compute(ptr))
-	y := e.y.Interface(e.y.Compute(ptr))
+	x := e.x.Value(e.x.Compute(ptr))
+	y := e.y.Value(e.y.Compute(ptr))
 	result := falseValuePointer
 	if x == y {
 		result = trueValuePointer
@@ -697,8 +725,8 @@ func (e *comparison) Eql(ptr unsafe.Pointer) unsafe.Pointer {
 }
 
 func (e *comparison) Neq(ptr unsafe.Pointer) unsafe.Pointer {
-	x := e.x.Interface(e.x.Compute(ptr))
-	y := e.y.Interface(e.y.Compute(ptr))
+	x := e.x.Value(e.x.Compute(ptr))
+	y := e.y.Value(e.y.Compute(ptr))
 	result := falseValuePointer
 	if x != y {
 		result = trueValuePointer
@@ -709,12 +737,15 @@ func (e *comparison) Neq(ptr unsafe.Pointer) unsafe.Pointer {
 func newComparison(operands Operands, control *Control) (*comparison, error) {
 	result := &comparison{}
 	var err error
+	if operands.HasNil() {
+		x := operands.NonNilOperand()
+		if result.x, err = x.NewOperand(control); err != nil {
+			return nil, err
+		}
+		return result, nil
+	}
 	x := operands[xOp]
 	y := operands[yOp]
-	x.ensureNilType(y)
-
-	y.ensureNilType(x)
-
 	if result.x, err = x.NewOperand(control); err != nil {
 		return nil, err
 	}
@@ -977,16 +1008,22 @@ func (e *binaryExpr) float64Leq(ptr unsafe.Pointer) unsafe.Pointer {
 }
 
 func (e *binaryExpr) and(ptr unsafe.Pointer) unsafe.Pointer {
-	result := falseValuePointer
-	if *(*bool)(e.x(ptr)) && *(*bool)(e.y(ptr)) {
-		result = trueValuePointer
+	result := trueValuePointer
+	if !*(*bool)(e.x(ptr)) {
+		return falseValuePointer
+	}
+	if !*(*bool)(e.y(ptr)) {
+		return falseValuePointer
 	}
 	return result
 }
 
 func (e *binaryExpr) or(ptr unsafe.Pointer) unsafe.Pointer {
 	result := falseValuePointer
-	if *(*bool)(e.x(ptr)) || *(*bool)(e.y(ptr)) {
+	if *(*bool)(e.x(ptr)) {
+		result = trueValuePointer
+	}
+	if *(*bool)(e.y(ptr)) {
 		result = trueValuePointer
 	}
 	return result

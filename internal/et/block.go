@@ -150,7 +150,6 @@ func NewBlockStmt(newStatementsFn []New, forStmt bool) New {
 				return nil, err
 			}
 		}
-
 		if forStmt {
 			if control.HasControl() {
 				return newForBlockStmt(stmts), nil

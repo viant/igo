@@ -197,11 +197,16 @@ func StateNew(dest reflect.Type, selectors []*Selector, tracker *Tracker, pool *
 		}
 	}
 	trueSelPos := -1
+	falseSelPos := -1
+
 	for i := range selectors {
 		sel := selectors[i]
 		index[sel.ID] = sel.Pos
 		if sel.ID == "true" {
 			trueSelPos = int(sel.Pos)
+		}
+		if sel.ID == "false" {
+			falseSelPos = int(sel.Pos)
 		}
 	}
 	return func() *State {
@@ -219,6 +224,9 @@ func StateNew(dest reflect.Type, selectors []*Selector, tracker *Tracker, pool *
 		}
 		if trueSelPos != -1 {
 			ret.SetBoolAt(trueSelPos, true)
+		}
+		if falseSelPos != -1 {
+			ret.SetBoolAt(falseSelPos, false)
 		}
 		return ret
 	}

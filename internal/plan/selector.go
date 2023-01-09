@@ -174,7 +174,7 @@ func (s *Scope) addSelector(parent *exec.Selector, expr ast.Expr) (*exec.Selecto
 	case *ast.Ident:
 		sel.Field = xunsafe.FieldByName(parent.Type, actual.Name)
 		if sel.Field == nil {
-			return nil, fmt.Errorf("failed to lookup %v.%v", sel.Name, actual.Name)
+			return nil, fmt.Errorf("failed to lookup %v", actual.Name)
 		}
 		sel.ID = parent.ID + "." + sel.Name
 		err = s.appendSelector(sel)
