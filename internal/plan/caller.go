@@ -13,11 +13,30 @@ type caller struct {
 }
 
 func (c *caller) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
-	var params = make([]reflect.Value, len(args))
+	fType := c.fn.Type()
+
+	signatureLen := fType.NumIn()
+	sliceArgIdx := -1
+	if len(args) != signatureLen {
+		arg := fType.In(signatureLen - 1)
+		if arg.Kind() == reflect.Slice {
+			sliceArgIdx = signatureLen - 1
+		}
+
+	}
+
+	var params = make([]reflect.Value, signatureLen)
 	for i := 0; i < len(args); i++ {
 		vPtr := args[i].Compute(ptr)
 		v := args[i].Interface(vPtr)
-		params[i] = reflect.ValueOf(v)
+		if i >= sliceArgIdx {
+			if sliceArgIdx == i {
+				params[sliceArgIdx] = reflect.MakeSlice(fType.In(i), 0, len(args)-sliceArgIdx)
+			}
+			params[sliceArgIdx] = reflect.Append(params[sliceArgIdx], reflect.ValueOf(v))
+		} else {
+			params[i] = reflect.ValueOf(v)
+		}
 	}
 	out := c.fn.Call(params)
 	switch len(out) {

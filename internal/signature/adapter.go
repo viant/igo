@@ -15,6 +15,26 @@ func (a *adapter) fnV() {
 
 }
 
+func (a *adapter) sssbFn(x string, y []string) bool {
+	state := a.Executor.NewState()
+	defer state.Release()
+	ptr := state.Pointer()
+	a.InAt(0).SetString(ptr, x)
+	a.InAt(1).SetValue(ptr, y)
+	a.Exec(state)
+	return a.OutAt(0).Bool(ptr)
+}
+
+func (a *adapter) iisbFn(x int, y []int) bool {
+	state := a.Executor.NewState()
+	defer state.Release()
+	ptr := state.Pointer()
+	a.InAt(0).SetInt(ptr, x)
+	a.InAt(1).SetValue(ptr, y)
+	a.Exec(state)
+	return a.OutAt(0).Bool(ptr)
+}
+
 func (a *adapter) iiiFn(x, y int) int {
 	state := a.Executor.NewState()
 	defer state.Release()

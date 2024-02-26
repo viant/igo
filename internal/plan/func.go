@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-//RegisterFunc register func
+// RegisterFunc register func
 func (s *Scope) RegisterFunc(name string, fn interface{}) {
 	s.funcs[name] = fn
 }

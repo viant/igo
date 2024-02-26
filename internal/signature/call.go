@@ -3,6 +3,7 @@ package signature
 import (
 	"github.com/viant/igo/exec"
 	"github.com/viant/xunsafe"
+	"reflect"
 	"unsafe"
 )
 
@@ -16,6 +17,56 @@ func (f fnV) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 func (f fnV) New(e *exec.Executor) interface{} {
 	var adapter = &adapter{Executor: e}
 	return adapter.fnV
+}
+
+type iisbFn func(int, []int) bool
+
+func (f iisbFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
+	x := xunsafe.AsInt(args[0].Compute(ptr))
+	var callArgs []int
+	if len(args) == 2 {
+		if args[1].Kind() == reflect.Int {
+			callArgs = append(callArgs, xunsafe.AsInt(args[1].Compute(ptr)))
+		} else {
+			callArgs = xunsafe.AsInts(args[1].Compute(ptr))
+		}
+	} else {
+		for i := 1; i < len(args); i++ {
+			callArgs = append(callArgs, xunsafe.AsInt(args[i].Compute(ptr)))
+		}
+	}
+	z := f(x, callArgs)
+	return unsafe.Pointer(&z)
+}
+
+func (f iisbFn) New(e *exec.Executor) interface{} {
+	var adapter = &adapter{Executor: e}
+	return adapter.iisbFn
+}
+
+type sssbFn func(string, []string) bool
+
+func (f sssbFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
+	x := xunsafe.AsString(args[0].Compute(ptr))
+	var callArgs []string
+	if len(args) == 2 {
+		if args[1].Kind() == reflect.String {
+			callArgs = append(callArgs, xunsafe.AsString(args[1].Compute(ptr)))
+		} else {
+			callArgs = xunsafe.AsStrings(args[1].Compute(ptr))
+		}
+	} else {
+		for i := 1; i < len(args); i++ {
+			callArgs = append(callArgs, xunsafe.AsString(args[i].Compute(ptr)))
+		}
+	}
+	z := f(x, callArgs)
+	return unsafe.Pointer(&z)
+}
+
+func (f sssbFn) New(e *exec.Executor) interface{} {
+	var adapter = &adapter{Executor: e}
+	return adapter.sssbFn
 }
 
 type iiiFn func(int, int) int

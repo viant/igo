@@ -8,8 +8,8 @@ import (
 )
 
 func (s *Scope) compileStmt(stmt ast.Stmt) (et.New, error) {
-	if s.stmtListener != nil {
-		newStmt, err := s.stmtListener(stmt)
+	if s.options.StmtListener != nil {
+		newStmt, err := s.options.StmtListener(stmt)
 		if err != nil {
 			return nil, err
 		}

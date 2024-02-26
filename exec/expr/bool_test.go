@@ -25,11 +25,23 @@ func TestNewBool(t *testing.T) {
 		active *bool
 	}
 
+	type case004 struct {
+		active *bool
+		id     int
+	}
+
+	type case005 struct {
+		active *bool
+		id     string
+	}
+
 	var testCases = []struct {
-		description string
-		input       interface{}
-		expr        string
-		expect      bool
+		description  string
+		functionName string
+		function     interface{}
+		input        interface{}
+		expr         string
+		expect       bool
 	}{
 		{
 			description: "primitive test - when true",
@@ -84,12 +96,54 @@ func TestNewBool(t *testing.T) {
 			input:  &case003{list: []int{1, 2}, active: boolPtr(true)},
 			expect: true,
 		},
+
+		{
+			description: "with udf",
+			expr: `if *v.active &&  in(v.id, 1,2,3) {
+				return true
+		}
+			return false
+		`,
+			input:        &case004{id: 1, active: boolPtr(true)},
+			functionName: "in",
+			function: func(id int, values []int) bool {
+				for _, v := range values {
+					if v == id {
+						return true
+					}
+				}
+				return false
+			},
+			expect: true,
+		},
+		{
+			description: "with udf",
+			expr: `if *v.active &&  in(v.id, "1","2","3") {
+				return true
+		}
+			return false
+		`,
+			input:        &case005{id: "1", active: boolPtr(true)},
+			functionName: "in",
+			function: func(id string, values []string) bool {
+				for _, v := range values {
+					if v == id {
+						return true
+					}
+				}
+				return false
+			},
+			expect: true,
+		},
 	}
 
 	for _, testCase := range testCases {
 		scope := igo.NewScope()
 		input := reflect.ValueOf(testCase.input)
 		inputType := input.Type()
+		if testCase.functionName != "" {
+			scope.RegisterFunc(testCase.functionName, testCase.function)
+		}
 		_, err := scope.DefineVariable("v", inputType)
 		assert.Nil(t, err, testCase.description)
 		predicate, err := scope.BoolExpression(testCase.expr)

@@ -4,32 +4,32 @@ import (
 	"github.com/viant/igo/exec"
 	"github.com/viant/igo/internal/et"
 	"github.com/viant/igo/metric"
+	"github.com/viant/igo/notify"
 	"github.com/viant/igo/option"
 	"reflect"
 	"strconv"
 )
 
-//Scope represents compilation scope
+// Scope represents compilation scope
 type Scope struct {
 	*et.Control
-	Metric       metric.Stmt
-	execType     interface{}
-	count        *int
-	upstream     []string
-	prefix       string
-	selectors    *[]*exec.Selector
-	index        map[string]uint16
-	types        map[string]reflect.Type
-	funcs        map[string]interface{}
-	out          *[]*exec.Selector
-	in           *[]*exec.Selector
-	transients   *int
-	mem          *memType
-	trackType    reflect.Type
-	trackLen     int
-	trackRoot    string
-	stmtListener option.StmtListener
-	exprListener option.ExprListener
+	options    option.Options
+	Metric     metric.Stmt
+	execType   interface{}
+	count      *int
+	upstream   []string
+	prefix     string
+	selectors  *[]*exec.Selector
+	index      map[string]uint16
+	types      map[string]reflect.Type
+	funcs      map[string]interface{}
+	out        *[]*exec.Selector
+	in         *[]*exec.Selector
+	transients *int
+	mem        *memType
+	trackType  reflect.Type
+	trackLen   int
+	trackRoot  string
 }
 
 func (s *Scope) SubScope(options ...option.Option) *Scope {
@@ -54,18 +54,11 @@ func (s *Scope) SubScope(options ...option.Option) *Scope {
 		trackType:  s.trackType,
 		Metric:     s.Metric,
 	}
-	if len(options) > 0 {
-		if listener := option.Options(options).ExprListener(); listener != nil {
-			result.exprListener = listener
-		}
-		if listener := option.Options(options).StmtListener(); listener != nil {
-			result.stmtListener = listener
-		}
-	}
+	result.options.Merge(&s.options, options)
 	return result
 }
 
-func (s *Scope) setTracker(tracker *option.Tracker) error {
+func (s *Scope) setTracker(tracker *notify.Tracker) error {
 	if tracker == nil {
 		return nil
 	}
@@ -83,17 +76,19 @@ func (s *Scope) setTracker(tracker *option.Tracker) error {
 	return nil
 }
 
-//NewScope creates compilation scope
+// NewScope creates compilation scope
 func NewScope(options ...option.Option) *Scope {
 	mem := newMemType()
 	mem.addField("_flow", reflect.TypeOf(uint64(0)))
-	tracker := option.Options(options).Tracker()
+	opts := option.NewOptions(options...)
+
+	tracker := opts.Tracker
 	if tracker != nil {
 		mem.addField("_trk", reflect.TypeOf(&exec.Tracker{}))
 	}
+
 	ret := newScope(mem)
-	ret.exprListener = option.Options(options).ExprListener()
-	ret.stmtListener = option.Options(options).StmtListener()
+	ret.options.Merge(&ret.options, options)
 	err := ret.setTracker(tracker)
 	if err != nil {
 		panic(err)

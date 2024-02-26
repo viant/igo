@@ -6,7 +6,7 @@ import (
 	"unsafe"
 )
 
-//Selector represent data selector
+// Selector represent data selector
 type Selector struct {
 	ID string
 	*xunsafe.Field
@@ -20,7 +20,7 @@ type Selector struct {
 	xPos      []uint16
 }
 
-//XPos returns selector position including with ancestor
+// XPos returns selector position including with ancestor
 func (s *Selector) XPos() []uint16 {
 	if len(s.xPos) > 0 {
 		return s.xPos
@@ -34,13 +34,13 @@ func (s *Selector) XPos() []uint16 {
 	return s.xPos
 }
 
-//IndexPointer returns slice item pointer
+// IndexPointer returns slice item pointer
 func (s *Selector) IndexPointer(ptr unsafe.Pointer, index int) unsafe.Pointer {
 	slicePtr := s.Upstream(ptr)
 	return s.Slice.PointerAt(slicePtr, uintptr(index))
 }
 
-//Upstream returns Ancestors pointer, excluding current Selector ogf
+// Upstream returns Ancestors pointer, excluding current Selector ogf
 func (s *Selector) Upstream(ptr unsafe.Pointer) unsafe.Pointer {
 	transientPtr := ptr
 	i := 0
@@ -63,7 +63,7 @@ begin:
 	goto begin
 }
 
-//Addr returns Selector address
+// Addr returns Selector address
 func (s *Selector) Addr(pointer unsafe.Pointer) unsafe.Pointer {
 	var ret unsafe.Pointer
 	if s.Pathway.IsDirect() {
@@ -85,7 +85,7 @@ func (s *Selector) Addr(pointer unsafe.Pointer) unsafe.Pointer {
 	return ret
 }
 
-//UpstreamOffset returns Selector Offset
+// UpstreamOffset returns Selector Offset
 func (s *Selector) UpstreamOffset() uintptr {
 	if s == nil {
 		return 0
@@ -97,7 +97,7 @@ func (s *Selector) UpstreamOffset() uintptr {
 	return result
 }
 
-//Interface return an interface,
+// Interface return an interface,
 func (s *Selector) Interface(ptr unsafe.Pointer) interface{} {
 	adr := s.Upstream(ptr)
 	if s.IsErrorType {
@@ -107,13 +107,18 @@ func (s *Selector) Interface(ptr unsafe.Pointer) interface{} {
 	return x
 }
 
-//SetInterface sets interface, it takes a state pointer
+// SetInterface sets interface, it takes a state pointer
 func (s *Selector) SetInterface(ptr unsafe.Pointer, value interface{}) {
 	addr := s.Upstream(ptr)
 	s.Field.SetValue(addr, value)
 }
 
-//SetValue sets value, tt takes an upstream pointer
+func (s *Selector) SetInterfaces(ptr unsafe.Pointer, value []interface{}) {
+	addr := s.Upstream(ptr)
+	s.Field.SetValue(addr, value)
+}
+
+// SetValue sets value, tt takes an upstream pointer
 func (s *Selector) SetValue(ptr unsafe.Pointer, value interface{}) {
 	if s.IsErrorType {
 		err, _ := value.(error)
@@ -124,7 +129,7 @@ func (s *Selector) SetValue(ptr unsafe.Pointer, value interface{}) {
 	}
 }
 
-//Offset returns Selector Offset
+// Offset returns Selector Offset
 func (s *Selector) Offset() uintptr {
 	if s == nil {
 		return 0

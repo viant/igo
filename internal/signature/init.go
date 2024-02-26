@@ -8,6 +8,8 @@ import (
 var buildIn = []reflect.Type{
 	reflect.TypeOf(new(fnV)).Elem(),
 	reflect.TypeOf(new(iiiFn)).Elem(),
+	reflect.TypeOf(new(iisbFn)).Elem(),
+	reflect.TypeOf(new(sssbFn)).Elem(),
 	reflect.TypeOf(new(f64f64f64Fn)).Elem(),
 	reflect.TypeOf(new(sssFn)).Elem(),
 	reflect.TypeOf(new(svrFn)).Elem(),

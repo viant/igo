@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/igo/exec"
+	"github.com/viant/igo/notify"
 	"github.com/viant/igo/option"
 	"log"
 	"reflect"
@@ -554,7 +555,7 @@ func TestNewTrackedScope(t *testing.T) {
 		B           B
 	}
 
-	scope := NewScope(option.NewTracker("a", reflect.TypeOf(A{}), false))
+	scope := NewScope(option.WithTracker(notify.NewTracker("a", reflect.TypeOf(A{}), false)))
 	scope.DefineVariable("t", reflect.TypeOf(true))
 	exec, err := scope.Compile(`
 	r := 0

@@ -9,7 +9,7 @@ import (
 	"reflect"
 )
 
-//IntExpression returns an int expression
+// IntExpression returns an int expression
 func (s *Scope) IntExpression(exprStmt string) (*expr.Int, error) {
 	exprNew, exprType, err := s.compileExprStmt(exprStmt)
 	if err != nil {
@@ -26,7 +26,7 @@ func (s *Scope) IntExpression(exprStmt string) (*expr.Int, error) {
 	return expr.NewInt(variablesNew, compute), nil
 }
 
-//BoolExpression returns  bool expression
+// BoolExpression returns  bool expression
 func (s *Scope) BoolExpression(exprStmt string) (*expr.Bool, error) {
 	sel, _ := s.DefineVariable("_boolExpr", reflect.TypeOf(true))
 	output := []*exec.Selector{sel}
@@ -48,7 +48,7 @@ func (s *Scope) BoolExpression(exprStmt string) (*expr.Bool, error) {
 	return expr.NewBool(variablesNew, compute), nil
 }
 
-//Float64Expression returns  float64 expression
+// Float64Expression returns  float64 expression
 func (s *Scope) Float64Expression(exprStmt string) (*expr.Float64, error) {
 	exprNew, exprType, err := s.compileExprStmt(exprStmt)
 	if err != nil {
@@ -66,7 +66,7 @@ func (s *Scope) Float64Expression(exprStmt string) (*expr.Float64, error) {
 	return expr.NewFloat64(variablesNew, compute), nil
 }
 
-//StringExpression returns  string expression
+// StringExpression returns  string expression
 func (s *Scope) StringExpression(exprStmt string) (*expr.String, error) {
 	exprNew, exprType, err := s.compileExprStmt(exprStmt)
 	if err != nil {
@@ -84,7 +84,7 @@ func (s *Scope) StringExpression(exprStmt string) (*expr.String, error) {
 	return expr.NewString(variablesNew, compute), nil
 }
 
-//compileExprStmt parses and compile expression
+// compileExprStmt parses and compile expression
 func (s *Scope) compileExprStmt(expr string) (et.New, reflect.Type, error) {
 	fn, err := s.compileFunction(expr)
 	if err != nil {
@@ -99,8 +99,8 @@ func (s *Scope) compileExprStmt(expr string) (et.New, reflect.Type, error) {
 }
 
 func (s *Scope) compileExpr(expr ast.Expr) (et.New, reflect.Type, error) {
-	if s.exprListener != nil {
-		newExpr, err := s.exprListener(expr)
+	if s.options.ExprListener != nil {
+		newExpr, err := s.options.ExprListener(expr)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -174,7 +174,7 @@ func (s *Scope) assembleOperand(expr ast.Expr, defined bool) (*et.Operand, error
 	return op, nil
 }
 
-//Parse returns an ast for the supploed expression
+// Parse returns an ast for the supploed expression
 func (s *Scope) Parse(expr string) (ast.Stmt, error) {
 	fn, err := s.compileFunction(expr)
 	if err != nil {
@@ -184,7 +184,7 @@ func (s *Scope) Parse(expr string) (ast.Stmt, error) {
 	return stmt, nil
 }
 
-//expression returns ast for supplied expr or error
+// expression returns ast for supplied expr or error
 func expression(expr string) (ast.Expr, error) {
 	scope := &Scope{}
 	fn, err := scope.compileFunction(expr)
