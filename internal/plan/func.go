@@ -7,6 +7,7 @@ import (
 	"go/ast"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 // RegisterFunc register func
@@ -30,6 +31,8 @@ func (s *Scope) lookupFunction(id string) (interface{}, bool) {
 		return asInt64, true
 	case "string":
 		return asString, true
+	case "contains":
+		return contains, true
 	}
 	fn, ok := s.funcs[id]
 	return fn, ok
@@ -163,6 +166,10 @@ func asInt64(v interface{}) int64 {
 		return int64(i)
 	}
 	panic(fmt.Errorf("unsupported int64 cast: %T", v))
+}
+
+func contains(text, fragment string) bool {
+	return strings.Contains(text, fragment)
 }
 
 func asString(v interface{}) string {

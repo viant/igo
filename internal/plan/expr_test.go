@@ -175,6 +175,18 @@ func TestScope_BoolExpression(t *testing.T) {
 			state:       map[string]interface{}{"x": 10, "y": 20},
 			expect:      false,
 		},
+		{
+			description: "expr contains",
+			expr:        "contains(x,y)",
+			state:       map[string]interface{}{"x": "this is test", "y": "is"},
+			expect:      true,
+		},
+		{
+			description: "expr contains",
+			expr:        "contains(x,y)",
+			state:       map[string]interface{}{"x": "this is test", "y": "abc"},
+			expect:      false,
+		},
 	}
 
 	for _, testCase := range testCase {

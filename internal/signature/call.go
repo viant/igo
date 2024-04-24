@@ -69,6 +69,20 @@ func (f sssbFn) New(e *exec.Executor) interface{} {
 	return adapter.sssbFn
 }
 
+type ssbFn func(string, string) bool
+
+func (f ssbFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
+	x := xunsafe.AsString(args[0].Compute(ptr))
+	y := xunsafe.AsString(args[1].Compute(ptr))
+	z := f(x, y)
+	return unsafe.Pointer(&z)
+}
+
+func (f ssbFn) New(e *exec.Executor) interface{} {
+	var adapter = &adapter{Executor: e}
+	return adapter.ssbFn
+}
+
 type iiiFn func(int, int) int
 
 func (f iiiFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
