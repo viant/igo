@@ -3,10 +3,11 @@ package exec
 import (
 	"fmt"
 	"github.com/viant/xunsafe"
+	"reflect"
 	"unsafe"
 )
 
-//Operand represents typed compute
+// Operand represents typed compute
 type Operand struct {
 	*xunsafe.Type //result pointer type
 	Offset        uintptr
@@ -16,7 +17,7 @@ type Operand struct {
 	ptr           unsafe.Pointer
 }
 
-//Validate checks if operand is valid
+// Validate checks if operand is valid
 func (o *Operand) Validate() error {
 	if o.Offset == 0 && o.ptr == nil && o.compute == nil && o.selector == nil {
 
@@ -33,20 +34,25 @@ func (o *Operand) computePtr(ptr unsafe.Pointer) unsafe.Pointer {
 	return x
 }
 
-//SetValuePtr set value ptr
+// SetValuePtr set value ptr
 func (o *Operand) SetValuePtr(ptr unsafe.Pointer, src unsafe.Pointer) {
+	dest := o.Compute(ptr)
+	if o.selector != nil && !o.selector.IsErrorType && o.Type != nil && o.Type.Kind() != reflect.Interface {
+		xunsafe.Copy(dest, src, int(o.selector.Size()))
+		return
+	}
 	value := o.Type.Interface(src)
-	oPtr := unsafe.Pointer(uintptr(o.Compute(ptr)) - o.selector.Field.Offset)
+	oPtr := unsafe.Pointer(uintptr(dest) - o.selector.Field.Offset)
 	o.selector.SetValue(oPtr, value)
 }
 
-//SetValue sets value
+// SetValue sets value
 func (o *Operand) SetValue(ptr unsafe.Pointer, src interface{}) {
 	oPtr := unsafe.Pointer(uintptr(o.Compute(ptr)) - o.selector.Field.Offset)
 	o.selector.SetValue(oPtr, src)
 }
 
-//Compute compute operan value
+// Compute compute operan value
 func (o *Operand) Compute(ptr unsafe.Pointer) unsafe.Pointer {
 	x := o.computePtr(ptr)
 	if o.useSelector {
@@ -59,7 +65,7 @@ func (o *Operand) Compute(ptr unsafe.Pointer) unsafe.Pointer {
 	return x
 }
 
-//NewOperand creates an operand
+// NewOperand creates an operand
 func NewOperand(xType *xunsafe.Type, offset uintptr, compute func(ptr unsafe.Pointer) unsafe.Pointer, selector *Selector, ptr unsafe.Pointer) *Operand {
 	return &Operand{
 		Type:        xType,

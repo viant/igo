@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-//Executor abstraction holding execution plan (execution syntax tree) to execute it
+// Executor abstraction holding execution plan (execution syntax tree) to execute it
 type Executor struct {
 	compute internal.Compute
 	In      []string //params variable identity
@@ -19,28 +19,32 @@ type Executor struct {
 	pool    *sync.Pool
 }
 
-//InAt returns in selector at position i
+// InAt returns in selector at position i
 func (e *Executor) InAt(i int) *Selector {
 	return e.in[i]
 }
 
-//OutAt returns out selector at position i
+// OutAt returns out selector at position i
 func (e *Executor) OutAt(i int) *Selector {
 	return e.out[i]
 }
 
-//Exec executes execution plan
+// Exec executes execution plan
 func (e *Executor) Exec(state *State) {
 	ptr := state.Pointer()
 	internal.AsFlow(ptr).Reset()
 	if trk := state.Tracker(); trk != nil {
 		trk.Reset()
 	}
-	e.compute(state.Pointer())
+	e.compute(ptr)
 }
 
 func (e *Executor) NewState() *State {
-	return e.pool.Get().(*State)
+	state := e.pool.Get().(*State)
+	if state.dirty {
+		state.Reset()
+	}
+	return state
 }
 
 func (e *Executor) Func() (interface{}, error) {
@@ -93,7 +97,7 @@ func (e *Executor) Signature() reflect.Type {
 	return e.fnType
 }
 
-//NewExecution creates a new execution
+// NewExecution creates a new execution
 func NewExecution(compute internal.Compute, pool *sync.Pool, in []*Selector, out []*Selector) *Executor {
 	return &Executor{compute: compute, pool: pool, in: in, out: out,
 		In:  Selectors(in).IDs(),

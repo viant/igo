@@ -131,6 +131,8 @@ func (s *Scope) compileExpr(expr ast.Expr) (et.New, reflect.Type, error) {
 
 	case *ast.CompositeLit:
 		return s.compileCompositeLiteral(0, z)
+	case *ast.TypeAssertExpr:
+		return s.compileTypeAssertExpr(z)
 	}
 	return nil, nil, fmt.Errorf("unsupported %T", expr)
 }
@@ -155,6 +157,31 @@ func (s *Scope) compileBinaryExpr(binaryExpr *ast.BinaryExpr) (et.New, reflect.T
 }
 
 func (s *Scope) assembleOperand(expr ast.Expr, defined bool) (*et.Operand, error) {
+	if indexExpr, ok := expr.(*ast.IndexExpr); ok {
+		mapOperand, keyOperand, _, isMap, err := s.assembleMapIndex(indexExpr)
+		if err != nil {
+			return nil, err
+		}
+		if isMap {
+			newFn, eType, err := et.NewMapGet(mapOperand, keyOperand)
+			if err != nil {
+				return nil, err
+			}
+			return et.NewOperand(nil, eType, newFn, nil), nil
+		}
+		sliceOperand, indexOperand, sliceType, isSlice, err := s.assembleSliceIndex(indexExpr)
+		if err != nil {
+			return nil, err
+		}
+		if isSlice && sliceType == reflect.TypeOf([]int{}) {
+			newFn, eType, err := et.NewSliceGetInt(sliceOperand, indexOperand)
+			if err != nil {
+				return nil, err
+			}
+			return et.NewOperand(nil, eType, newFn, nil), nil
+		}
+	}
+
 	var op *et.Operand
 	if isSelector(expr) {
 		sel, err := s.selector(expr, defined)

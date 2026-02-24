@@ -8,20 +8,24 @@ import (
 	"unsafe"
 )
 
-//New function to create variable
+// New function to create variable
 type New func() *State
 
-//State represents execution plan variables
+// State represents execution plan variables
 type State struct {
 	pointer   unsafe.Pointer
 	tracker   *Tracker
 	value     interface{}
 	index     map[string]uint16
 	selectors []*Selector
+	dest      reflect.Type
+	truePos   int
+	falsePos  int
+	dirty     bool
 	pool      *sync.Pool
 }
 
-//Pointer returns variables pointer
+// Pointer returns variables pointer
 func (s *State) Pointer() unsafe.Pointer {
 	return s.pointer
 }
@@ -30,15 +34,31 @@ func (s *State) Release() {
 	if s.pool == nil {
 		return
 	}
+	s.dirty = true
 	s.pool.Put(s)
 
+}
+
+func (s *State) Reset() {
+	reflect.ValueOf(s.value).Elem().Set(reflect.Zero(s.dest))
+	if s.tracker != nil {
+		s.tracker.Reset()
+		*(**Tracker)(unsafe.Pointer(uintptr(s.pointer) + 8)) = s.tracker
+	}
+	if s.truePos != -1 {
+		s.SetBoolAt(s.truePos, true)
+	}
+	if s.falsePos != -1 {
+		s.SetBoolAt(s.falsePos, false)
+	}
+	s.dirty = false
 }
 
 func (s *State) Interface() interface{} {
 	return s.value
 }
 
-//SetValue sets value for
+// SetValue sets value for
 func (s *State) SetValue(name string, value interface{}) error {
 	sel, err := s.Selector(name)
 	if err != nil {
@@ -48,19 +68,19 @@ func (s *State) SetValue(name string, value interface{}) error {
 	return nil
 }
 
-//SetValueAt set values at position
+// SetValueAt set values at position
 func (s *State) SetValueAt(idx int, value interface{}) {
 	sel := s.selectors[idx]
 	sel.SetValue(sel.Upstream(s.pointer), value)
 }
 
-//ValueAt returns value for variable index
+// ValueAt returns value for variable index
 func (s *State) ValueAt(idx int) interface{} {
 	sel := s.selectors[idx]
 	return sel.Interface(sel.Upstream(s.pointer))
 }
 
-//Value returns value for supplied name or error
+// Value returns value for supplied name or error
 func (s *State) Value(name string) (interface{}, error) {
 	sel, err := s.Selector(name)
 	if err != nil {
@@ -69,7 +89,7 @@ func (s *State) Value(name string) (interface{}, error) {
 	return sel.Interface(sel.Upstream(s.pointer)), nil
 }
 
-//SetInt set int value
+// SetInt set int value
 func (s *State) SetInt(name string, value int) error {
 	sel, err := s.Selector(name)
 	if err != nil {
@@ -83,7 +103,7 @@ func (s *State) SetInt(name string, value int) error {
 	return nil
 }
 
-//Index returns variable index for specified name
+// Index returns variable index for specified name
 func (s *State) Index(name string) (int, error) {
 	sel, err := s.Selector(name)
 	if err != nil {
@@ -92,7 +112,7 @@ func (s *State) Index(name string) (int, error) {
 	return int(sel.Pos), nil
 }
 
-//Int returns int or error for supplied variable name
+// Int returns int or error for supplied variable name
 func (s *State) Int(name string) (int, error) {
 	sel, err := s.Selector(name)
 	if err != nil {
@@ -101,7 +121,7 @@ func (s *State) Int(name string) (int, error) {
 	return sel.Int(sel.Upstream(s.pointer)), nil
 }
 
-//SetString set value for supplied variable name or error if variable name is invalid
+// SetString set value for supplied variable name or error if variable name is invalid
 func (s *State) SetString(name string, value string) error {
 	sel, err := s.Selector(name)
 	if err != nil {
@@ -111,14 +131,14 @@ func (s *State) SetString(name string, value string) error {
 	return nil
 }
 
-//SetStringAt set value for supplied variable index
+// SetStringAt set value for supplied variable index
 func (s *State) SetStringAt(index int, value string) error {
 	sel := s.selectors[index]
 	sel.SetString(sel.Upstream(s.pointer), value)
 	return nil
 }
 
-//String set string value for supplied variable name or error if variable name is invalid
+// String set string value for supplied variable name or error if variable name is invalid
 func (s *State) String(name string) (string, error) {
 	sel, err := s.Selector(name)
 	if err != nil {
@@ -127,7 +147,7 @@ func (s *State) String(name string) (string, error) {
 	return sel.String(sel.Upstream(s.pointer)), nil
 }
 
-//SetBool set boolean value for supplied variable name or error if variable name is invalid
+// SetBool set boolean value for supplied variable name or error if variable name is invalid
 func (s *State) SetBool(name string, value bool) error {
 	sel, err := s.Selector(name)
 	if err != nil {
@@ -137,7 +157,7 @@ func (s *State) SetBool(name string, value bool) error {
 	return nil
 }
 
-//Bool returns boolean value or error for supplied variable name
+// Bool returns boolean value or error for supplied variable name
 func (s *State) Bool(name string) (bool, error) {
 	sel, err := s.Selector(name)
 	if err != nil {
@@ -146,13 +166,13 @@ func (s *State) Bool(name string) (bool, error) {
 	return sel.Bool(sel.Upstream(s.pointer)), nil
 }
 
-//SetBoolAt set boolean value at selor position
+// SetBoolAt set boolean value at selor position
 func (s *State) SetBoolAt(idx int, value bool) {
 	sel := s.selectors[idx]
 	sel.SetBool(sel.Upstream(s.pointer), value)
 }
 
-//SetFloat64 set float64 value for supplied variable name or error if variable name is invalid
+// SetFloat64 set float64 value for supplied variable name or error if variable name is invalid
 func (s *State) SetFloat64(name string, value float64) error {
 	sel, err := s.Selector(name)
 	if err != nil {
@@ -162,7 +182,7 @@ func (s *State) SetFloat64(name string, value float64) error {
 	return nil
 }
 
-//Float64 returns float64 value or error for supplied variable name
+// Float64 returns float64 value or error for supplied variable name
 func (s *State) Float64(name string) (float64, error) {
 	sel, err := s.Selector(name)
 	if err != nil {
@@ -171,7 +191,7 @@ func (s *State) Float64(name string) (float64, error) {
 	return sel.Float64(sel.Upstream(s.pointer)), nil
 }
 
-//Selector returns selector for a supploed name or error
+// Selector returns selector for a supploed name or error
 func (s *State) Selector(name string) (*Selector, error) {
 	idx, ok := s.index[name]
 	if !ok {
@@ -184,7 +204,7 @@ func (s *State) Tracker() *Tracker {
 	return s.tracker
 }
 
-//StateNew creates variables
+// StateNew creates variables
 func StateNew(dest reflect.Type, selectors []*Selector, tracker *Tracker, pool *sync.Pool) New {
 	var index = make(map[string]uint16)
 	if len(selectors) == 0 {
@@ -217,6 +237,10 @@ func StateNew(dest reflect.Type, selectors []*Selector, tracker *Tracker, pool *
 			value:     value,
 			index:     index,
 			selectors: selectors,
+			dest:      dest,
+			truePos:   trueSelPos,
+			falsePos:  falseSelPos,
+			dirty:     false,
 		}
 		if tracker != nil {
 			ret.tracker = tracker.Clone()

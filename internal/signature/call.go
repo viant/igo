@@ -97,6 +97,42 @@ func (f iiiFn) New(e *exec.Executor) interface{} {
 	return adapter.iiiFn
 }
 
+type iiFn func(int) int
+
+func (f iiFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
+	x := xunsafe.AsInt(args[0].Compute(ptr))
+	z := f(x)
+	return unsafe.Pointer(&z)
+}
+
+func (f iiFn) CallVoid(ptr unsafe.Pointer, args []*exec.Operand) {
+	x := xunsafe.AsInt(args[0].Compute(ptr))
+	f(x)
+}
+
+func (f iiFn) New(e *exec.Executor) interface{} {
+	var adapter = &adapter{Executor: e}
+	return adapter.iiFn
+}
+
+type ivFn func(int)
+
+func (f ivFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
+	x := xunsafe.AsInt(args[0].Compute(ptr))
+	f(x)
+	return nil
+}
+
+func (f ivFn) CallVoid(ptr unsafe.Pointer, args []*exec.Operand) {
+	x := xunsafe.AsInt(args[0].Compute(ptr))
+	f(x)
+}
+
+func (f ivFn) New(e *exec.Executor) interface{} {
+	var adapter = &adapter{Executor: e}
+	return adapter.ivFn
+}
+
 type f64f64f64Fn func(float64, float64) float64
 
 func (f f64f64f64Fn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
@@ -147,11 +183,37 @@ func (f svrFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	default:
 		var y = make([]interface{}, len(args)-1)
 		for i := 1; i < len(args); i++ {
-			y[i] = args[i].Interface(args[i].Compute(ptr))
+			y[i-1] = args[i].Interface(args[i].Compute(ptr))
 		}
 		f(x, y...)
 	}
 	return nil
+}
+
+func (f svrFn) CallVoid(ptr unsafe.Pointer, args []*exec.Operand) {
+	x := xunsafe.AsString(args[0].Compute(ptr))
+	switch len(args) - 1 {
+	case 0:
+		f(x)
+	case 1:
+		a1 := args[1].Interface(args[1].Compute(ptr))
+		f(x, a1)
+	case 2:
+		a1 := args[1].Interface(args[1].Compute(ptr))
+		a2 := args[2].Interface(args[2].Compute(ptr))
+		f(x, a1, a2)
+	case 3:
+		a1 := args[1].Interface(args[1].Compute(ptr))
+		a2 := args[2].Interface(args[2].Compute(ptr))
+		a3 := args[3].Interface(args[3].Compute(ptr))
+		f(x, a1, a2, a3)
+	default:
+		var y = make([]interface{}, len(args)-1)
+		for i := 1; i < len(args); i++ {
+			y[i-1] = args[i].Interface(args[i].Compute(ptr))
+		}
+		f(x, y...)
+	}
 }
 
 type svrieFn func(string, ...interface{}) (int, error)
@@ -179,7 +241,7 @@ func (f svrieFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	default:
 		var y = make([]interface{}, len(args)-1)
 		for i := 1; i < len(args); i++ {
-			y[i] = args[i].Interface(args[i].Compute(ptr))
+			y[i-1] = args[i].Interface(args[i].Compute(ptr))
 		}
 		i, err = f(x, y...)
 	}
@@ -190,6 +252,32 @@ func (f svrieFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	return unsafe.Pointer(&ret)
 }
 
+func (f svrieFn) CallVoid(ptr unsafe.Pointer, args []*exec.Operand) {
+	x := xunsafe.AsString(args[0].Compute(ptr))
+	switch len(args) - 1 {
+	case 0:
+		f(x)
+	case 1:
+		a1 := args[1].Interface(args[1].Compute(ptr))
+		f(x, a1)
+	case 2:
+		a1 := args[1].Interface(args[1].Compute(ptr))
+		a2 := args[2].Interface(args[2].Compute(ptr))
+		f(x, a1, a2)
+	case 3:
+		a1 := args[1].Interface(args[1].Compute(ptr))
+		a2 := args[2].Interface(args[2].Compute(ptr))
+		a3 := args[3].Interface(args[3].Compute(ptr))
+		f(x, a1, a2, a3)
+	default:
+		var y = make([]interface{}, len(args)-1)
+		for i := 1; i < len(args); i++ {
+			y[i-1] = args[i].Interface(args[i].Compute(ptr))
+		}
+		f(x, y...)
+	}
+}
+
 type vrieFn func(...interface{}) (int, error)
 
 func (f vrieFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
@@ -197,24 +285,31 @@ func (f vrieFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	i := &v
 	var vErr error
 	err := &vErr
-	switch len(args) - 1 { //avoid mem allocation with upto 3 var args
+	switch len(args) { //avoid mem allocation with upto 3 var args
 	case 0:
 		*i, *err = f()
 	case 1:
 		a0 := args[0].Interface(args[0].Compute(ptr))
-		a1 := args[1].Interface(args[1].Compute(ptr))
-		*i, *err = f(a0, a1)
+		callArgs := [1]interface{}{a0}
+		*i, *err = f(callArgs[:]...)
 	case 2:
 		a0 := args[0].Interface(args[0].Compute(ptr))
 		a1 := args[1].Interface(args[1].Compute(ptr))
-		a2 := args[2].Interface(args[2].Compute(ptr))
-		*i, *err = f(a0, a1, a2)
+		callArgs := [2]interface{}{a0, a1}
+		*i, *err = f(callArgs[:]...)
 	case 3:
 		a0 := args[0].Interface(args[0].Compute(ptr))
 		a1 := args[1].Interface(args[1].Compute(ptr))
 		a2 := args[2].Interface(args[2].Compute(ptr))
+		callArgs := [3]interface{}{a0, a1, a2}
+		*i, *err = f(callArgs[:]...)
+	case 4:
+		a0 := args[0].Interface(args[0].Compute(ptr))
+		a1 := args[1].Interface(args[1].Compute(ptr))
+		a2 := args[2].Interface(args[2].Compute(ptr))
 		a3 := args[3].Interface(args[3].Compute(ptr))
-		*i, *err = f(a0, a1, a2, a3)
+		callArgs := [4]interface{}{a0, a1, a2, a3}
+		*i, *err = f(callArgs[:]...)
 	default:
 		var y = make([]interface{}, len(args))
 		for i := 0; i < len(args); i++ {
@@ -222,10 +317,46 @@ func (f vrieFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 		}
 		*i, *err = f(y...)
 	}
-	var ret = &[2]unsafe.Pointer{}
-	ret[0] = unsafe.Pointer(i)
-	ret[1] = unsafe.Pointer(err)
-	return unsafe.Pointer(ret)
+	ret := [2]unsafe.Pointer{
+		unsafe.Pointer(i),
+		unsafe.Pointer(err),
+	}
+	return unsafe.Pointer(&ret)
+}
+
+func (f vrieFn) CallVoid(ptr unsafe.Pointer, args []*exec.Operand) {
+	switch len(args) {
+	case 0:
+		f()
+	case 1:
+		a0 := args[0].Interface(args[0].Compute(ptr))
+		callArgs := [1]interface{}{a0}
+		f(callArgs[:]...)
+	case 2:
+		a0 := args[0].Interface(args[0].Compute(ptr))
+		a1 := args[1].Interface(args[1].Compute(ptr))
+		callArgs := [2]interface{}{a0, a1}
+		f(callArgs[:]...)
+	case 3:
+		a0 := args[0].Interface(args[0].Compute(ptr))
+		a1 := args[1].Interface(args[1].Compute(ptr))
+		a2 := args[2].Interface(args[2].Compute(ptr))
+		callArgs := [3]interface{}{a0, a1, a2}
+		f(callArgs[:]...)
+	case 4:
+		a0 := args[0].Interface(args[0].Compute(ptr))
+		a1 := args[1].Interface(args[1].Compute(ptr))
+		a2 := args[2].Interface(args[2].Compute(ptr))
+		a3 := args[3].Interface(args[3].Compute(ptr))
+		callArgs := [4]interface{}{a0, a1, a2, a3}
+		f(callArgs[:]...)
+	default:
+		var y = make([]interface{}, len(args))
+		for i := 0; i < len(args); i++ {
+			y[i] = args[i].Interface(args[i].Compute(ptr))
+		}
+		f(y...)
+	}
 }
 
 type svrs func(string, ...interface{}) string
@@ -251,11 +382,37 @@ func (f svrs) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	default:
 		var y = make([]interface{}, len(args)-1)
 		for i := 1; i < len(args); i++ {
-			y[i] = args[i].Interface(args[i].Compute(ptr))
+			y[i-1] = args[i].Interface(args[i].Compute(ptr))
 		}
 		result = f(x, y...)
 	}
 	return unsafe.Pointer(&result)
+}
+
+func (f svrs) CallVoid(ptr unsafe.Pointer, args []*exec.Operand) {
+	x := xunsafe.AsString(args[0].Compute(ptr))
+	switch len(args) - 1 {
+	case 0:
+		f(x)
+	case 1:
+		a1 := args[1].Interface(args[1].Compute(ptr))
+		f(x, a1)
+	case 2:
+		a1 := args[1].Interface(args[1].Compute(ptr))
+		a2 := args[2].Interface(args[2].Compute(ptr))
+		f(x, a1, a2)
+	case 3:
+		a1 := args[1].Interface(args[1].Compute(ptr))
+		a2 := args[2].Interface(args[2].Compute(ptr))
+		a3 := args[3].Interface(args[3].Compute(ptr))
+		f(x, a1, a2, a3)
+	default:
+		var y = make([]interface{}, len(args)-1)
+		for i := 1; i < len(args); i++ {
+			y[i-1] = args[i].Interface(args[i].Compute(ptr))
+		}
+		f(x, y...)
+	}
 }
 
 type viFn func(interface{}) int
@@ -300,6 +457,75 @@ func (f vsFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	return unsafe.Pointer(&r)
 }
 
+type vi64Fn func(interface{}) int64
+
+func (f vi64Fn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
+	x := args[0].Interface(args[0].Compute(ptr))
+	r := f(x)
+	return unsafe.Pointer(&r)
+}
+
+func (f vi64Fn) New(e *exec.Executor) interface{} {
+	var adapter = &adapter{Executor: e}
+	return adapter.vi64Fn
+}
+
+type iibFn func(int, int) bool
+
+func (f iibFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
+	x := xunsafe.AsInt(args[0].Compute(ptr))
+	y := xunsafe.AsInt(args[1].Compute(ptr))
+	z := f(x, y)
+	return unsafe.Pointer(&z)
+}
+
+func (f iibFn) New(e *exec.Executor) interface{} {
+	var adapter = &adapter{Executor: e}
+	return adapter.iibFn
+}
+
+type ssiFn func(string, string) int
+
+func (f ssiFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
+	x := xunsafe.AsString(args[0].Compute(ptr))
+	y := xunsafe.AsString(args[1].Compute(ptr))
+	z := f(x, y)
+	return unsafe.Pointer(&z)
+}
+
+func (f ssiFn) New(e *exec.Executor) interface{} {
+	var adapter = &adapter{Executor: e}
+	return adapter.ssiFn
+}
+
+type i64i64i64Fn func(int64, int64) int64
+
+func (f i64i64i64Fn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
+	x := xunsafe.AsInt64(args[0].Compute(ptr))
+	y := xunsafe.AsInt64(args[1].Compute(ptr))
+	z := f(x, y)
+	return unsafe.Pointer(&z)
+}
+
+func (f i64i64i64Fn) New(e *exec.Executor) interface{} {
+	var adapter = &adapter{Executor: e}
+	return adapter.i64i64i64Fn
+}
+
+type i64i64bFn func(int64, int64) bool
+
+func (f i64i64bFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
+	x := xunsafe.AsInt64(args[0].Compute(ptr))
+	y := xunsafe.AsInt64(args[1].Compute(ptr))
+	z := f(x, y)
+	return unsafe.Pointer(&z)
+}
+
+func (f i64i64bFn) New(e *exec.Executor) interface{} {
+	var adapter = &adapter{Executor: e}
+	return adapter.i64i64bFn
+}
+
 type vvsvFn func(interface{}, ...interface{}) interface{}
 
 func (f vvsvFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
@@ -323,9 +549,35 @@ func (f vvsvFn) Call(ptr unsafe.Pointer, args []*exec.Operand) unsafe.Pointer {
 	default:
 		var y = make([]interface{}, len(args)-1)
 		for i := 1; i < len(args); i++ {
-			y[i] = args[i].Interface(args[i].Compute(ptr))
+			y[i-1] = args[i].Interface(args[i].Compute(ptr))
 		}
 		result = f(x, y...)
 	}
 	return xunsafe.AsPointer(result)
+}
+
+func (f vvsvFn) CallVoid(ptr unsafe.Pointer, args []*exec.Operand) {
+	x := args[0].Interface(args[0].Compute(ptr))
+	switch len(args) - 1 {
+	case 0:
+		f(x)
+	case 1:
+		a1 := args[1].Interface(args[1].Compute(ptr))
+		f(x, a1)
+	case 2:
+		a1 := args[1].Interface(args[1].Compute(ptr))
+		a2 := args[2].Interface(args[2].Compute(ptr))
+		f(x, a1, a2)
+	case 3:
+		a1 := args[1].Interface(args[1].Compute(ptr))
+		a2 := args[2].Interface(args[2].Compute(ptr))
+		a3 := args[3].Interface(args[3].Compute(ptr))
+		f(x, a1, a2, a3)
+	default:
+		var y = make([]interface{}, len(args)-1)
+		for i := 1; i < len(args); i++ {
+			y[i-1] = args[i].Interface(args[i].Compute(ptr))
+		}
+		f(x, y...)
+	}
 }

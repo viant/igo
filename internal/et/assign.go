@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"github.com/viant/igo/exec"
 	"github.com/viant/igo/internal"
+	"github.com/viant/xunsafe"
 	"reflect"
 	"unsafe"
 )
 
-//NewCallExprAssign create an assign expression
+// NewCallExprAssign create an assign expression
 func NewCallExprAssign(caller exec.Caller, args []*Operand, dest []*Operand) (New, error) {
 	expr := &callAssign{
 		callExpr: &callExpr{caller: caller},
@@ -29,6 +30,7 @@ func NewCallExprAssign(caller exec.Caller, args []*Operand, dest []*Operand) (Ne
 		if expr.callExpr.operands, err = argOperands.operands(control); err != nil {
 			return nil, err
 		}
+		expr.interfaceCaller, _ = expr.callExpr.caller.(exec.InterfaceCaller)
 
 		switch len(dest) {
 		case 1:
@@ -36,6 +38,10 @@ func NewCallExprAssign(caller exec.Caller, args []*Operand, dest []*Operand) (Ne
 				switch dest[0].Kind() {
 				case reflect.Int:
 					return expr.computeDirectInt, nil
+				case reflect.Complex64:
+					return expr.computeDirectComplex64, nil
+				case reflect.Complex128:
+					return expr.computeDirectComplex128, nil
 				case reflect.String:
 					return expr.computeDirectString, nil
 				case reflect.Bool:
@@ -47,12 +53,20 @@ func NewCallExprAssign(caller exec.Caller, args []*Operand, dest []*Operand) (Ne
 			switch dest[0].Kind() {
 			case reflect.Int:
 				return expr.computeInt, nil
+			case reflect.Complex64:
+				return expr.computeComplex64, nil
+			case reflect.Complex128:
+				return expr.computeComplex128, nil
 			case reflect.String:
 				return expr.computeString, nil
 			case reflect.Bool:
 				return expr.computeBool, nil
 			case reflect.Float64:
 				return expr.computeFloat64, nil
+			case reflect.Interface:
+				if expr.interfaceCaller != nil {
+					return expr.computeInterface, nil
+				}
 			}
 			return expr.compute, nil
 		case 2:
@@ -70,17 +84,34 @@ func NewCallExprAssign(caller exec.Caller, args []*Operand, dest []*Operand) (Ne
 	}, nil
 }
 
-//NewAssignExpr create an assign expression
+// NewAssignExpr create an assign expression
 func NewAssignExpr(trackPos []uint16, ops ...*Operand) New {
 	operands := Operands(ops)
 	opType := operands[1].Type.Type()
+	var destType reflect.Type
+	if operands[0].Type != nil {
+		destType = operands[0].Type.Type()
+	}
 	isDirect := operands.pathway() == exec.PathwayDirect
+	if lhs := operands[0].Selector; lhs != nil && lhs.Index != nil {
+		isDirect = false
+	}
+	if rhs := operands[1].Selector; rhs != nil && rhs.Index != nil {
+		isDirect = false
+	}
 	trackable := len(trackPos) > 0
 	return func(exec *Control) (internal.Compute, error) {
 		assignExpr, err := operands.assignExpr(exec)
 		assignExpr.trackPos = trackPos
 		if err != nil {
 			return nil, err
+		}
+		// Interface destination must use generic value assignment to preserve interface headers.
+		if destType != nil && destType.Kind() == reflect.Interface {
+			if trackable {
+				return assignExpr.interfaceTrackedAssign, nil
+			}
+			return assignExpr.interfaceAssign, nil
 		}
 		if isDirect {
 			switch opType.Kind() {
@@ -89,6 +120,16 @@ func NewAssignExpr(trackPos []uint16, ops ...*Operand) New {
 					return assignExpr.directIntTackedAssign, nil
 				}
 				return assignExpr.directIntAssign, nil
+			case reflect.Complex64:
+				if trackable {
+					return assignExpr.directComplex64TrackedAssign, nil
+				}
+				return assignExpr.directComplex64Assign, nil
+			case reflect.Complex128:
+				if trackable {
+					return assignExpr.directComplex128TrackedAssign, nil
+				}
+				return assignExpr.directComplex128Assign, nil
 			case reflect.Float64:
 				if trackable {
 					return assignExpr.directFloat64TackedAssign, nil
@@ -105,6 +146,11 @@ func NewAssignExpr(trackPos []uint16, ops ...*Operand) New {
 					return assignExpr.directBoolTackedAssign, nil
 				}
 				return assignExpr.directBoolAssign, nil
+			case reflect.Map:
+				if trackable {
+					return assignExpr.directMapTrackedAssign, nil
+				}
+				return assignExpr.directMapAssign, nil
 			default:
 				if opType.ConvertibleTo(errType) {
 					return assignExpr.directErrorAssign, nil
@@ -121,6 +167,16 @@ func NewAssignExpr(trackPos []uint16, ops ...*Operand) New {
 				return assignExpr.intTrackedAssign, nil
 			}
 			return assignExpr.intAssign, nil
+		case reflect.Complex64:
+			if trackable {
+				return assignExpr.complex64TrackedAssign, nil
+			}
+			return assignExpr.complex64Assign, nil
+		case reflect.Complex128:
+			if trackable {
+				return assignExpr.complex128TrackedAssign, nil
+			}
+			return assignExpr.complex128Assign, nil
 		case reflect.Float64:
 			if trackable {
 				return assignExpr.float64TrackedAssign, nil
@@ -136,6 +192,11 @@ func NewAssignExpr(trackPos []uint16, ops ...*Operand) New {
 				return assignExpr.boolTrackedAssign, nil
 			}
 			return assignExpr.boolAssign, nil
+		case reflect.Map:
+			if trackable {
+				return assignExpr.mapTrackedAssign, nil
+			}
+			return assignExpr.mapAssign, nil
 		default:
 			if opType.ConvertibleTo(errType) {
 				return assignExpr.errorAssign, nil
@@ -149,10 +210,11 @@ func NewAssignExpr(trackPos []uint16, ops ...*Operand) New {
 }
 
 type callAssign struct {
-	dest     []*exec.Operand
-	trackPos []int
-	offset   uintptr
-	callExpr *callExpr
+	dest            []*exec.Operand
+	trackPos        []int
+	offset          uintptr
+	callExpr        *callExpr
+	interfaceCaller exec.InterfaceCaller
 }
 
 func (a *callAssign) computeInt(ptr unsafe.Pointer) unsafe.Pointer {
@@ -166,6 +228,20 @@ func (a *callAssign) computeString(ptr unsafe.Pointer) unsafe.Pointer {
 	result := a.callExpr.caller.Call(ptr, a.callExpr.operands)
 	destPtr := a.dest[0].Compute(ptr)
 	*(*string)(destPtr) = *(*string)(result)
+	return result
+}
+
+func (a *callAssign) computeComplex64(ptr unsafe.Pointer) unsafe.Pointer {
+	result := a.callExpr.caller.Call(ptr, a.callExpr.operands)
+	destPtr := a.dest[0].Compute(ptr)
+	*(*complex64)(destPtr) = *(*complex64)(result)
+	return result
+}
+
+func (a *callAssign) computeComplex128(ptr unsafe.Pointer) unsafe.Pointer {
+	result := a.callExpr.caller.Call(ptr, a.callExpr.operands)
+	destPtr := a.dest[0].Compute(ptr)
+	*(*complex128)(destPtr) = *(*complex128)(result)
 	return result
 }
 
@@ -197,6 +273,20 @@ func (a *callAssign) computeDirectString(ptr unsafe.Pointer) unsafe.Pointer {
 	return result
 }
 
+func (a *callAssign) computeDirectComplex64(ptr unsafe.Pointer) unsafe.Pointer {
+	result := a.callExpr.caller.Call(ptr, a.callExpr.operands)
+	destPtr := unsafe.Pointer(uintptr(ptr) + a.dest[0].Offset)
+	*(*complex64)(destPtr) = *(*complex64)(result)
+	return result
+}
+
+func (a *callAssign) computeDirectComplex128(ptr unsafe.Pointer) unsafe.Pointer {
+	result := a.callExpr.caller.Call(ptr, a.callExpr.operands)
+	destPtr := unsafe.Pointer(uintptr(ptr) + a.dest[0].Offset)
+	*(*complex128)(destPtr) = *(*complex128)(result)
+	return result
+}
+
 func (a *callAssign) computeDirectBool(ptr unsafe.Pointer) unsafe.Pointer {
 	result := a.callExpr.caller.Call(ptr, a.callExpr.operands)
 	destPtr := unsafe.Pointer(uintptr(ptr) + a.dest[0].Offset)
@@ -214,6 +304,12 @@ func (a *callAssign) computeDirectFloat64(ptr unsafe.Pointer) unsafe.Pointer {
 func (a *callAssign) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	result := a.callExpr.caller.Call(ptr, a.callExpr.operands)
 	a.dest[0].SetValuePtr(ptr, result)
+	return nil
+}
+
+func (a *callAssign) computeInterface(ptr unsafe.Pointer) unsafe.Pointer {
+	value := a.interfaceCaller.CallInterface(ptr, a.callExpr.operands)
+	a.dest[0].SetValue(ptr, value)
 	return nil
 }
 
@@ -274,6 +370,7 @@ type assignExpr struct {
 	xOffset  uintptr
 	y        *exec.Operand
 	yOffset  uintptr
+	ySize    int
 }
 
 func (e *assignExpr) setMutation(ptr unsafe.Pointer) {
@@ -294,6 +391,38 @@ func (e *assignExpr) directIntTackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
 
 func (e *assignExpr) directIntAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	*(*int)(unsafe.Pointer(uintptr(ptr) + e.xOffset)) = *(*int)(unsafe.Pointer(uintptr(ptr) + e.yOffset))
+	return nil
+}
+
+func (e *assignExpr) directComplex64TrackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	dest := (*complex64)(unsafe.Pointer(uintptr(ptr) + e.xOffset))
+	src := *(*complex64)(unsafe.Pointer(uintptr(ptr) + e.yOffset))
+	if *dest == src {
+		return unsafe.Pointer(dest)
+	}
+	*dest = src
+	e.setMutation(ptr)
+	return nil
+}
+
+func (e *assignExpr) directComplex64Assign(ptr unsafe.Pointer) unsafe.Pointer {
+	*(*complex64)(unsafe.Pointer(uintptr(ptr) + e.xOffset)) = *(*complex64)(unsafe.Pointer(uintptr(ptr) + e.yOffset))
+	return nil
+}
+
+func (e *assignExpr) directComplex128TrackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	dest := (*complex128)(unsafe.Pointer(uintptr(ptr) + e.xOffset))
+	src := *(*complex128)(unsafe.Pointer(uintptr(ptr) + e.yOffset))
+	if *dest == src {
+		return unsafe.Pointer(dest)
+	}
+	*dest = src
+	e.setMutation(ptr)
+	return nil
+}
+
+func (e *assignExpr) directComplex128Assign(ptr unsafe.Pointer) unsafe.Pointer {
+	*(*complex128)(unsafe.Pointer(uintptr(ptr) + e.xOffset)) = *(*complex128)(unsafe.Pointer(uintptr(ptr) + e.yOffset))
 	return nil
 }
 
@@ -350,23 +479,54 @@ func (e *assignExpr) directErrorAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	return nil
 }
 
+func (e *assignExpr) directMapTrackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	dest := unsafe.Pointer(uintptr(ptr) + e.xOffset)
+	src := unsafe.Pointer(uintptr(ptr) + e.yOffset)
+	destMapPtr := *(*unsafe.Pointer)(dest)
+	srcMapPtr := *(*unsafe.Pointer)(src)
+	if destMapPtr == srcMapPtr {
+		return nil
+	}
+	xunsafe.Copy(dest, src, e.ySize)
+	e.setMutation(ptr)
+	return nil
+}
+
+func (e *assignExpr) directMapAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	dest := unsafe.Pointer(uintptr(ptr) + e.xOffset)
+	src := unsafe.Pointer(uintptr(ptr) + e.yOffset)
+	xunsafe.Copy(dest, src, e.ySize)
+	return nil
+}
+
 func (e *assignExpr) directTrackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
-	value := e.y.Interface(unsafe.Pointer(uintptr(ptr) + e.yOffset))
-	e.x.SetValue(unsafe.Pointer(uintptr(ptr)+e.xOffset), value)
+	dest := unsafe.Pointer(uintptr(ptr) + e.xOffset)
+	src := e.y.Compute(ptr)
+	xunsafe.Copy(dest, src, e.ySize)
 	e.setMutation(ptr)
 	return nil
 }
 
 func (e *assignExpr) directAssign(ptr unsafe.Pointer) unsafe.Pointer {
-	value := e.y.Interface(unsafe.Pointer(uintptr(ptr) + e.yOffset))
-	e.x.SetValue(unsafe.Pointer(uintptr(ptr)+e.xOffset), value)
+	dest := unsafe.Pointer(uintptr(ptr) + e.xOffset)
+	src := e.y.Compute(ptr)
+	xunsafe.Copy(dest, src, e.ySize)
 	return nil
 }
 
 func (e *assignExpr) intTrackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	x := *(*int)(e.y.Compute(ptr))
+	if e.x.Index != nil {
+		dest := (*int)(e.x.Addr(ptr))
+		if *dest == x {
+			return nil
+		}
+		*dest = x
+		e.setMutation(ptr)
+		return nil
+	}
 	upstream := e.x.Upstream(ptr)
-	if x == (e.x.Int(upstream)) {
+	if x == e.x.Int(upstream) {
 		return nil
 	}
 	e.x.SetInt(upstream, x)
@@ -376,6 +536,10 @@ func (e *assignExpr) intTrackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
 
 func (e *assignExpr) intAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	x := *(*int)(e.y.Compute(ptr))
+	if e.x.Index != nil {
+		*(*int)(e.x.Addr(ptr)) = x
+		return nil
+	}
 	e.x.SetInt(e.x.Upstream(ptr), x)
 	return nil
 }
@@ -428,22 +592,98 @@ func (e *assignExpr) float64Assign(ptr unsafe.Pointer) unsafe.Pointer {
 	return nil
 }
 
+func (e *assignExpr) complex64TrackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	src := *(*complex64)(e.y.Compute(ptr))
+	dest := (*complex64)(e.x.Addr(ptr))
+	if *dest == src {
+		return nil
+	}
+	*dest = src
+	e.setMutation(ptr)
+	return nil
+}
+
+func (e *assignExpr) complex64Assign(ptr unsafe.Pointer) unsafe.Pointer {
+	*(*complex64)(e.x.Addr(ptr)) = *(*complex64)(e.y.Compute(ptr))
+	return nil
+}
+
+func (e *assignExpr) complex128TrackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	src := *(*complex128)(e.y.Compute(ptr))
+	dest := (*complex128)(e.x.Addr(ptr))
+	if *dest == src {
+		return nil
+	}
+	*dest = src
+	e.setMutation(ptr)
+	return nil
+}
+
+func (e *assignExpr) complex128Assign(ptr unsafe.Pointer) unsafe.Pointer {
+	*(*complex128)(e.x.Addr(ptr)) = *(*complex128)(e.y.Compute(ptr))
+	return nil
+}
+
 func (e *assignExpr) errorAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	e.x.SetError(e.x.Upstream(ptr), *(*error)(e.y.Compute(ptr)))
 	return nil
 }
 
+func (e *assignExpr) mapAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	yPtr := e.y.Compute(ptr)
+	dest := e.x.Addr(ptr)
+	xunsafe.Copy(dest, yPtr, e.ySize)
+	return nil
+}
+
+func (e *assignExpr) mapTrackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	yPtr := e.y.Compute(ptr)
+	dest := e.x.Addr(ptr)
+	if *(*unsafe.Pointer)(dest) == *(*unsafe.Pointer)(yPtr) {
+		return nil
+	}
+	xunsafe.Copy(dest, yPtr, e.ySize)
+	e.setMutation(ptr)
+	return nil
+}
+
 func (e *assignExpr) assign(ptr unsafe.Pointer) unsafe.Pointer {
 	yPtr := e.y.Compute(ptr)
-	value := e.y.Interface(yPtr)
+	value := operandValue(e.y, yPtr)
 	e.x.SetValue(e.x.Upstream(ptr), value)
 	return nil
 }
 
 func (e *assignExpr) trackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
 	yPtr := e.y.Compute(ptr)
-	value := e.y.Interface(yPtr)
+	value := operandValue(e.y, yPtr)
 	e.x.SetValue(e.x.Upstream(ptr), value)
+	e.setMutation(ptr)
+	return nil
+}
+
+func operandValue(op *exec.Operand, ptr unsafe.Pointer) (result interface{}) {
+	defer func() {
+		if recover() != nil {
+			result = op.Value(ptr)
+		}
+	}()
+	return op.Interface(ptr)
+}
+
+func (e *assignExpr) interfaceAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	value := operandValue(e.y, e.y.Compute(ptr))
+	*(*interface{})(e.x.Addr(ptr)) = value
+	return nil
+}
+
+func (e *assignExpr) interfaceTrackedAssign(ptr unsafe.Pointer) unsafe.Pointer {
+	value := operandValue(e.y, e.y.Compute(ptr))
+	dest := (*interface{})(e.x.Addr(ptr))
+	if *dest == value {
+		return nil
+	}
+	*dest = value
 	e.setMutation(ptr)
 	return nil
 }

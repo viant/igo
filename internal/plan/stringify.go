@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-//stringifyExpr returns sting representation of expression
+// stringifyExpr returns sting representation of expression
 func stringifyExpr(expr ast.Expr, depth int) string {
 	builder := strings.Builder{}
 	curr := 0
@@ -16,7 +16,7 @@ func stringifyExpr(expr ast.Expr, depth int) string {
 	return builder.String()
 }
 
-//StringifyExpr returns sting representation of expression
+// StringifyExpr returns sting representation of expression
 func (s *Scope) StringifyExpr(expr ast.Expr) (string, error) {
 	builder := strings.Builder{}
 	curr := 0
@@ -93,7 +93,35 @@ func stringify(expr ast.Expr, builder *strings.Builder, current *int, depth int)
 		builder.WriteString(actual.Op.String())
 		return stringify(actual.X, builder, current, depth)
 	case *ast.ArrayType:
+		if actual.Len != nil {
+			builder.WriteString("[")
+			if err := stringify(actual.Len, builder, current, depth); err != nil {
+				return err
+			}
+			builder.WriteString("]")
+		}
 		return stringify(actual.Elt, builder, current, depth)
+	case *ast.MapType:
+		builder.WriteString("map[")
+		if err := stringify(actual.Key, builder, current, depth); err != nil {
+			return err
+		}
+		builder.WriteString("]")
+		return stringify(actual.Value, builder, current, depth)
+	case *ast.ChanType:
+		switch actual.Dir {
+		case ast.RECV:
+			builder.WriteString("<-chan ")
+		case ast.SEND:
+			builder.WriteString("chan<- ")
+		default:
+			builder.WriteString("chan ")
+		}
+		return stringify(actual.Value, builder, current, depth)
+	case *ast.InterfaceType:
+		builder.WriteString("interface{}")
+		*current++
+		return nil
 	case *ast.StarExpr:
 		builder.WriteString("*")
 		return stringify(actual.X, builder, current, depth)

@@ -10,14 +10,13 @@ import (
 	"strings"
 )
 
-//Selector returns a selector
+// Selector returns a selector
 func (s *Scope) Selector(expr string) (*exec.Selector, error) {
 	selector := s.lookup(expr)
 	if selector != nil {
 		return selector, nil
 	}
-	panic(fmt.Sprintf("undefied variable: %v %v", expr, s.index))
-	return nil, fmt.Errorf("undefied variable: %v %v", expr, s.index)
+	return nil, fmt.Errorf("undefined variable: %v %v", expr, s.index)
 }
 
 func (s *Scope) lookup(expr string) *exec.Selector {
@@ -37,7 +36,7 @@ func (s *Scope) lookup(expr string) *exec.Selector {
 	return nil
 }
 
-//ResolveSelector returns existing or registerSelector selector to the scope
+// ResolveSelector returns existing or registerSelector selector to the scope
 func (s *Scope) ResolveSelector(selector string) (*exec.Selector, error) {
 	if sel := s.lookup(selector); sel != nil {
 		return sel, nil
@@ -49,7 +48,7 @@ func (s *Scope) ResolveSelector(selector string) (*exec.Selector, error) {
 	return s.selector(expr, true)
 }
 
-//DefineEmbedVariable defines embeded variable
+// DefineEmbedVariable defines embeded variable
 func (s *Scope) DefineEmbedVariable(name string, t reflect.Type) error {
 	s.EmbedType(name, t)
 	root := s.lookup(name)
@@ -72,8 +71,7 @@ func (s *Scope) DefineEmbedVariable(name string, t reflect.Type) error {
 	return nil
 }
 
-//
-//DefineVariable defines variables
+// DefineVariable defines variables
 func (s *Scope) DefineVariable(name string, fType reflect.Type) (*exec.Selector, error) {
 	id := s.varID(name)
 	if s.lookup(id) != nil {
@@ -91,7 +89,7 @@ func (s *Scope) DefineVariable(name string, fType reflect.Type) (*exec.Selector,
 	return sel, err
 }
 
-//UpdateVariable updated variable type
+// UpdateVariable updated variable type
 func (s *Scope) UpdateVariable(name string, fType reflect.Type) (*exec.Selector, error) {
 	id := s.varID(name)
 	sel := s.lookup(id)
@@ -198,6 +196,14 @@ func (s *Scope) addSelectorNode(parent *exec.Selector, actual *ast.SelectorExpr)
 }
 
 func (s *Scope) addIndexSelector(parent *exec.Selector, actual *ast.IndexExpr, sel *exec.Selector) error {
+	if parent.Type == nil {
+		return fmt.Errorf("unsupported indexed selector on nil type")
+	}
+	switch parent.Type.Kind() {
+	case reflect.Slice, reflect.Array, reflect.Map:
+	default:
+		return fmt.Errorf("unsupported indexed selector on %s", parent.Type.String())
+	}
 	sel.Type = parent.Type.Elem()
 	sel.ID = parent.ID + "[" + stringifyExpr(actual.Index, 0) + "]"
 	sel.Slice = xunsafe.NewSlice(parent.Type)
@@ -257,7 +263,7 @@ func (s *Scope) registerSelector(sel *exec.Selector) {
 	*s.selectors = append(*s.selectors, sel)
 }
 
-//adjust selector type from inferred expression (t nsType)
+// adjust selector type from inferred expression (t nsType)
 func (s *Scope) adjust(selector *exec.Selector, t reflect.Type) error {
 	if selector.Type == nil {
 		selector.Type = t

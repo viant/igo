@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/viant/igo/internal"
 	"github.com/viant/igo/internal/et"
+	"github.com/viant/xunsafe"
 	"go/ast"
 	"reflect"
 	"unsafe"
@@ -50,7 +51,9 @@ func (s *Scope) declareTypedVariables(spec *ast.ValueSpec) (et.New, error) {
 		}
 		s.adjust(sel, sType)
 		left := et.NewOperand(sel, sType, nil, nil)
-		right := et.NewOperand(sel, sType, nil, reflect.New(sType).Elem().Interface())
+		zero := reflect.New(sType)
+		right := et.NewOperand(nil, sType, nil, nil)
+		right.ValuePtr = xunsafe.ValuePointer(&zero)
 		state = append(state, et.NewAssignExpr(nil, left, right))
 	}
 	return et.NewGroupStmt(state, false), nil
@@ -61,6 +64,14 @@ func (s *Scope) defineVariables(spec *ast.ValueSpec) (et.New, error) {
 	var declrs []et.New
 	if len(spec.Names) == len(spec.Values) {
 		for i, n := range spec.Names {
+			if fnLit, ok := spec.Values[i].(*ast.FuncLit); ok {
+				fn, err := s.functionFromFuncLit(fnLit)
+				if err != nil {
+					return nil, err
+				}
+				s.RegisterFunc(n.Name, fn)
+				continue
+			}
 			sel, err := s.selector(n, true)
 			if err != nil {
 				return nil, err

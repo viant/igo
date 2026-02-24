@@ -8,7 +8,7 @@ import (
 	"reflect"
 )
 
-func (s *Scope) compileRangeStmt(rangeStmt *ast.RangeStmt) (et.New, error) {
+func (s *Scope) compileRangeStmt(rangeStmt *ast.RangeStmt, labelID uint32) (et.New, error) {
 	var x *et.Operand
 	var key, value *exec.Selector
 	var body et.New
@@ -26,7 +26,7 @@ func (s *Scope) compileRangeStmt(rangeStmt *ast.RangeStmt) (et.New, error) {
 			return nil, err
 		}
 	}
-	xType := derefType(x.Selector.Type)
+	xType := x.Type.Type()
 	valueType := derefType(xType.Elem())
 	switch xType.Kind() {
 	case reflect.Slice:
@@ -36,10 +36,17 @@ func (s *Scope) compileRangeStmt(rangeStmt *ast.RangeStmt) (et.New, error) {
 		if value != nil {
 			s.adjust(value, reflect.PtrTo(valueType))
 		}
+	case reflect.Map:
+		if key != nil {
+			s.adjust(key, xType.Key())
+		}
+		if value != nil {
+			s.adjust(value, xType.Elem())
+		}
 	default:
 		return nil, fmt.Errorf("range not supported for type %s", xType.String())
 	}
 
 	body, err = s.compileBlockStmt(rangeStmt.Body, true)
-	return et.NewRange(x, key, value, body)
+	return et.NewRange(x, key, value, body, labelID)
 }

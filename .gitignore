@@ -1,2 +1,5 @@
 .idea
 go.sum
+*.test
+*.cpu
+*.mem

@@ -6,11 +6,12 @@ import (
 	"github.com/viant/igo/internal/et"
 	"go/ast"
 	"go/parser"
+	"reflect"
 	"strings"
 	"sync"
 )
 
-//Function compile function
+// Function compile function
 func (s *Scope) Function(expr string) (interface{}, error) {
 	newFn, err := s.compile(expr)
 	if err != nil {
@@ -28,7 +29,7 @@ func (s *Scope) Function(expr string) (interface{}, error) {
 	return execution.Func()
 }
 
-//Compile parses and compile simple golang expression into execution tree
+// Compile parses and compile simple golang expression into execution tree
 func (s *Scope) Compile(expr string) (*exec.Executor, error) {
 	newFn, err := s.compile(expr)
 	if err != nil {
@@ -54,17 +55,69 @@ func (s *Scope) Compile(expr string) (*exec.Executor, error) {
 
 func (s *Scope) compile(expr string) (et.New, error) {
 	s.Metric.Reset()
+	*s.defers = (*s.defers)[:0]
 	fn, err := s.compileFunction(expr)
 	if err != nil {
 		return nil, err
 	}
+	return s.compileFromFuncLit(fn)
+}
+
+func (s *Scope) compileFromFuncLit(fn *ast.FuncLit) (et.New, error) {
+	var err error
 	if err = s.assignParams(s.in, fn.Type.Params); err != nil {
 		return nil, err
 	}
 	if err = s.assignParams(s.out, fn.Type.Results); err != nil {
 		return nil, err
 	}
-	return s.compileBlockStmt(fn.Body, false)
+	body, err := s.compileBlockStmt(fn.Body, false)
+	if err != nil {
+		return nil, err
+	}
+	if len(*s.defers) == 0 {
+		return body, nil
+	}
+	deferStmts := make([]et.New, 0, len(*s.defers))
+	for i := len(*s.defers) - 1; i >= 0; i-- {
+		deferStmts = append(deferStmts, (*s.defers)[i])
+	}
+	deferBlock := et.NewGroupStmt(deferStmts, false)
+	group := []et.New{body, deferBlock}
+	return et.NewGroupStmt(group, false), nil
+}
+
+func (s *Scope) functionFromFuncLit(fn *ast.FuncLit) (interface{}, error) {
+	inner := NewScope()
+	for name, t := range s.types {
+		inner.RegisterNamedType(name, t)
+	}
+	for name, fnRef := range s.funcs {
+		inner.RegisterFunc(name, fnRef)
+	}
+
+	newFn, err := inner.compileFromFuncLit(fn)
+	if err != nil {
+		return nil, err
+	}
+	stateNew := exec.StateNew(inner.mem.Type, *inner.selectors, nil, nil)
+	pool := &sync.Pool{New: func() interface{} {
+		return stateNew()
+	}}
+	compute, err := newFn(&et.Control{Flow: inner.Flow})
+	if err != nil {
+		return nil, err
+	}
+	execution := exec.NewExecution(compute, pool, *inner.in, *inner.out)
+	retTypes := make([]reflect.Type, len(*inner.out))
+	for i, out := range *inner.out {
+		retTypes[i] = out.Type
+	}
+	return &compiledInlineFunc{
+		caller:   newInlineExecutorCaller(execution),
+		retTypes: retTypes,
+		fnType:   execution.Signature(),
+	}, nil
 }
 
 func (s *Scope) assignParams(dest *[]*exec.Selector, fieldList *ast.FieldList) error {

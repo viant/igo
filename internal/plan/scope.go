@@ -26,10 +26,13 @@ type Scope struct {
 	out        *[]*exec.Selector
 	in         *[]*exec.Selector
 	transients *int
+	defers     *[]et.New
 	mem        *memType
 	trackType  reflect.Type
 	trackLen   int
 	trackRoot  string
+	labels     map[string]uint32
+	nextLabel  *uint32
 }
 
 func (s *Scope) SubScope(options ...option.Option) *Scope {
@@ -51,8 +54,11 @@ func (s *Scope) SubScope(options ...option.Option) *Scope {
 		in:         s.in,
 		out:        s.out,
 		transients: s.transients,
+		defers:     s.defers,
 		trackType:  s.trackType,
 		Metric:     s.Metric,
+		labels:     s.labels,
+		nextLabel:  s.nextLabel,
 	}
 	result.options.Merge(&s.options, options)
 	return result
@@ -100,6 +106,8 @@ func newScope(mem *memType) *Scope {
 	var selectors = make([]*exec.Selector, 0, 3)
 	count := 0
 	transients := 0
+	nextLabel := uint32(1)
+	defers := make([]et.New, 0, 2)
 	var results []*exec.Selector
 	var params []*exec.Selector
 	control := et.Control{}
@@ -115,6 +123,9 @@ func newScope(mem *memType) *Scope {
 		funcs:      map[string]interface{}{},
 		out:        &results,
 		in:         &params,
+		defers:     &defers,
+		labels:     map[string]uint32{},
+		nextLabel:  &nextLabel,
 	}
 	_, _ = s.DefineVariable("true", reflect.TypeOf(true))
 	_, _ = s.DefineVariable("false", reflect.TypeOf(true))

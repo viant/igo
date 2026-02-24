@@ -8,7 +8,7 @@ import (
 	"unsafe"
 )
 
-//Operand defines operand
+// Operand defines operand
 type Operand struct {
 	Key string
 	Idx int
@@ -19,7 +19,7 @@ type Operand struct {
 	New
 }
 
-//Compute computes operand
+// Compute computes operand
 func (o *Operand) Compute(control *Control) (internal.Compute, *exec.Selector, error) {
 	if o.New != nil {
 		comp, err := o.New(control)
@@ -41,7 +41,7 @@ func (o *Operand) IsNilSelector() bool {
 	return false
 }
 
-//NewOperand create an operand
+// NewOperand create an operand
 func (o *Operand) NewOperand(control *Control) (*exec.Operand, error) {
 	var err error
 	offset := o.Offset()
@@ -59,7 +59,7 @@ func (o *Operand) NewOperand(control *Control) (*exec.Operand, error) {
 	return result, result.Validate()
 }
 
-//NewOperand crates a new operand
+// NewOperand crates a new operand
 func NewOperand(sel *exec.Selector, oType reflect.Type, newFn New, value interface{}) *Operand {
 	result := &Operand{Selector: sel, New: newFn, Value: value}
 	if oType == nil && sel != nil {
@@ -72,7 +72,10 @@ func NewOperand(sel *exec.Selector, oType reflect.Type, newFn New, value interfa
 		result.Type = xunsafe.NewType(oType)
 	}
 	if value != nil {
-		result.ValuePtr = result.Type.Pointer(value)
+		result.ValuePtr = xunsafe.EnsurePointer(value)
+	} else if oType != nil && sel == nil && newFn == nil {
+		zero := reflect.New(oType)
+		result.ValuePtr = xunsafe.ValuePointer(&zero)
 	}
 	return result
 }

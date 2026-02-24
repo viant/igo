@@ -15,6 +15,7 @@ func literalOperand(node *ast.BasicLit) (*et.Operand, error) {
 	var sV string
 	var iV int
 	var fV float64
+	var cV complex128
 
 	switch node.Kind {
 	case token.INT:
@@ -29,6 +30,25 @@ func literalOperand(node *ast.BasicLit) (*et.Operand, error) {
 		sV = strings.Trim(node.Value, "\"`")
 		t = reflect.TypeOf("")
 		return et.NewOperand(nil, t, nil, sV), nil
+	case token.CHAR:
+		unquoted, err := strconv.Unquote(node.Value)
+		if err != nil {
+			return nil, err
+		}
+		runes := []rune(unquoted)
+		if len(runes) != 1 {
+			return nil, fmt.Errorf("invalid rune literal: %s", node.Value)
+		}
+		t = reflect.TypeOf(rune(0))
+		return et.NewOperand(nil, t, nil, runes[0]), nil
+	case token.IMAG:
+		parsed, err := strconv.ParseComplex(node.Value, 128)
+		if err != nil {
+			return nil, err
+		}
+		cV = parsed
+		t = reflect.TypeOf(complex128(0))
+		return et.NewOperand(nil, t, nil, cV), nil
 	default:
 		return nil, fmt.Errorf("unsupported token: %v", node.Kind)
 	}

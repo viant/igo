@@ -6,12 +6,12 @@ import (
 	"unsafe"
 )
 
-//NewForStmt creates a for stmt
-func NewForStmt(cond *Operand, init, post, body New) (New, error) {
+// NewForStmt creates a for stmt
+func NewForStmt(cond *Operand, init, post, body New, labelID uint32) (New, error) {
 	return func(control *Control) (internal.Compute, error) {
 		var err error
 		forKind := 0
-		stmt := &forStmt{}
+		stmt := &forStmt{labelID: labelID}
 		if cond != nil {
 			forKind = 1
 			stmt.cond, err = cond.NewOperand(control)
@@ -37,20 +37,57 @@ func NewForStmt(cond *Operand, init, post, body New) (New, error) {
 		}
 		switch forKind {
 		case 0xF:
+			if !control.HasControl() {
+				return stmt.computeForNoFlow, nil
+			}
 			return stmt.computeFor, nil
+		}
+		if !control.HasControl() {
+			return stmt.computeNoFlow, nil
 		}
 		return stmt.compute, nil
 	}, nil
 }
 
 type forStmt struct {
-	init internal.Compute
-	cond *exec.Operand
-	body internal.Compute
-	post internal.Compute
+	init    internal.Compute
+	cond    *exec.Operand
+	body    internal.Compute
+	post    internal.Compute
+	labelID uint32
 }
 
 func (s *forStmt) computeFor(ptr unsafe.Pointer) unsafe.Pointer {
+	flow := internal.AsFlow(ptr)
+	for s.init(ptr); *(*bool)(s.cond.Compute(ptr)); s.post(ptr) {
+		r := s.body(ptr)
+		if flow.HasControl() {
+			if flow.HasBreak() {
+				if label := flow.Label(); label != 0 && label != s.labelID {
+					return r
+				}
+				flow.ClearBreak()
+				return nil
+			}
+			if flow.HasContinue() {
+				if label := flow.Label(); label != 0 && label != s.labelID {
+					return r
+				}
+				flow.ClearContinue()
+				continue
+			}
+			if flow.HasGoto() {
+				return r
+			}
+			if flow.HasReturn() {
+				return r
+			}
+		}
+	}
+	return nil
+}
+
+func (s *forStmt) computeForNoFlow(ptr unsafe.Pointer) unsafe.Pointer {
 	for s.init(ptr); *(*bool)(s.cond.Compute(ptr)); s.post(ptr) {
 		s.body(ptr)
 	}
@@ -71,16 +108,42 @@ func (s *forStmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 		r := s.body(ptr)
 		if flow.HasControl() {
 			if flow.HasBreak() {
-				flow.Reset()
+				if label := flow.Label(); label != 0 && label != s.labelID {
+					return r
+				}
+				flow.ClearBreak()
 				return nil
 			}
 			if flow.HasContinue() {
-				flow.Reset()
+				if label := flow.Label(); label != 0 && label != s.labelID {
+					return r
+				}
+				flow.ClearContinue()
 				continue
+			}
+			if flow.HasGoto() {
+				return r
 			}
 			if flow.HasReturn() {
 				return r
 			}
+		}
+	}
+}
+
+func (s *forStmt) computeNoFlow(ptr unsafe.Pointer) unsafe.Pointer {
+	if s.init != nil {
+		s.init(ptr)
+	}
+	for {
+		if s.cond != nil {
+			if !*(*bool)(s.cond.Compute(ptr)) {
+				return nil
+			}
+		}
+		s.body(ptr)
+		if s.post != nil {
+			s.post(ptr)
 		}
 	}
 }
@@ -225,20 +288,6 @@ func newForBlockStmt(stmts []internal.Compute) internal.Compute {
 		return nop
 	case 1:
 		return stmts[0]
-	case 2:
-		return newRorBlock2Stmt(stmts[0], stmts[1]).compute
-	case 3:
-		return newRorBlock3Stmt(stmts[0], stmts[1], stmts[2]).compute
-	case 4:
-		return newRorBlock4Stmt(stmts[0], stmts[1], stmts[2], stmts[3]).compute
-	case 5:
-		return newRorBlock5Stmt(stmts[0], stmts[1], stmts[2], stmts[3], stmts[4]).compute
-	case 6:
-		return newRorBlock6Stmt(stmts[0], stmts[1], stmts[2], stmts[3], stmts[4], stmts[5]).compute
-	case 7:
-		return newRorBlock7Stmt(stmts[0], stmts[1], stmts[2], stmts[3], stmts[4], stmts[5], stmts[6]).compute
-	case 8:
-		return newRorBlock8Stmt(stmts[0], stmts[1], stmts[2], stmts[3], stmts[4], stmts[5], stmts[6], stmts[7]).compute
 	}
 	grp := &forRorBlockStmt{statements: stmts}
 	return grp.compute

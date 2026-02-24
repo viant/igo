@@ -55,6 +55,23 @@ func (a *adapter) iiiFn(x, y int) int {
 	return a.OutAt(0).Int(ptr)
 }
 
+func (a *adapter) iiFn(x int) int {
+	state := a.Executor.NewState()
+	defer state.Release()
+	ptr := state.Pointer()
+	a.InAt(0).SetInt(ptr, x)
+	a.Exec(state)
+	return a.OutAt(0).Int(ptr)
+}
+
+func (a *adapter) ivFn(x int) {
+	state := a.Executor.NewState()
+	defer state.Release()
+	ptr := state.Pointer()
+	a.InAt(0).SetInt(ptr, x)
+	a.Exec(state)
+}
+
 func (a *adapter) f64f64f64Fn(x, y float64) float64 {
 	state := a.Executor.NewState()
 	defer state.Release()
@@ -73,4 +90,53 @@ func (a *adapter) sssFn(x, y string) string {
 	a.InAt(1).SetString(ptr, y)
 	a.Exec(state)
 	return a.OutAt(0).String(ptr)
+}
+
+func (a *adapter) vi64Fn(x interface{}) int64 {
+	state := a.Executor.NewState()
+	defer state.Release()
+	ptr := state.Pointer()
+	a.InAt(0).SetValue(ptr, x)
+	a.Exec(state)
+	return a.OutAt(0).Int64(ptr)
+}
+
+func (a *adapter) iibFn(x, y int) bool {
+	state := a.Executor.NewState()
+	defer state.Release()
+	ptr := state.Pointer()
+	a.InAt(0).SetInt(ptr, x)
+	a.InAt(1).SetInt(ptr, y)
+	a.Exec(state)
+	return a.OutAt(0).Bool(ptr)
+}
+
+func (a *adapter) ssiFn(x, y string) int {
+	state := a.Executor.NewState()
+	defer state.Release()
+	ptr := state.Pointer()
+	a.InAt(0).SetString(ptr, x)
+	a.InAt(1).SetString(ptr, y)
+	a.Exec(state)
+	return a.OutAt(0).Int(ptr)
+}
+
+func (a *adapter) i64i64i64Fn(x, y int64) int64 {
+	state := a.Executor.NewState()
+	defer state.Release()
+	ptr := state.Pointer()
+	a.InAt(0).SetInt64(ptr, x)
+	a.InAt(1).SetInt64(ptr, y)
+	a.Exec(state)
+	return a.OutAt(0).Int64(ptr)
+}
+
+func (a *adapter) i64i64bFn(x, y int64) bool {
+	state := a.Executor.NewState()
+	defer state.Release()
+	ptr := state.Pointer()
+	a.InAt(0).SetInt64(ptr, x)
+	a.InAt(1).SetInt64(ptr, y)
+	a.Exec(state)
+	return a.OutAt(0).Bool(ptr)
 }

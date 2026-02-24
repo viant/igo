@@ -12,7 +12,7 @@ const (
 	zOp = 2
 )
 
-//Operands represents opertands
+// Operands represents opertands
 type Operands []*Operand
 
 func (o Operands) pathway() exec.Pathway {
@@ -20,6 +20,10 @@ func (o Operands) pathway() exec.Pathway {
 	for _, candidate := range o {
 		if candidate.Selector == nil {
 			return exec.PathwayUndefined
+		}
+		// Indexed selectors require selector.Addr(ptr); offset-based direct access is invalid.
+		if candidate.Selector.Index != nil {
+			return exec.PathwayRef
 		}
 		if candidate.Pathway >= result {
 			result = candidate.Pathway
@@ -84,6 +88,9 @@ func (o Operands) assignExpr(control *Control) (*assignExpr, error) {
 	}
 	if y.Selector != nil {
 		result.yOffset = y.Offset()
+	}
+	if y.Type != nil {
+		result.ySize = int(y.Type.Type().Size())
 	}
 	return result, err
 }

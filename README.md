@@ -239,72 +239,92 @@ To use function defined outside the code, register type with `(Scope).RegisterFu
 
 ## Performance
 
-### Expression evaluation
+### Current benchmark snapshot (Apple M1 Max, Feb 24 2026)
 
-See benchmark for the following expression evaluation:
+Command:
 
-```10 + (5 * x / y * (z - 7))```
-
-```text
-BenchmarkScope_IntExpression_Native-16          134789700                8.627 ns/op           0 B/op          0 allocs/op
-BenchmarkScope_IntExpression-16                 19722770                57.06 ns/op            8 B/op          1 allocs/op
-BenchmarkScope_IntExpression_GoVal-16             625620                2040 ns/op          2328 B/op        11 allocs/op
-```
-
-[GoVal](https://github.com/maja42/goval) is ~255 slower for the presented expression comparing to natively compiled code, 
-while Igo is only ~7 times slower
-
-
-### Code execution
-
-See benchmark for the following code:
-```go
-count :=0
-for i :=0;i<100;i++ {
-    count += i
-}
-print(count)
-```
-
-[GoEval](https://github.com/xtaci/goeval) evaluation takes almost ~24K time longer than natively compiled code,
-whereas this project is only around ~35 slower. As point of reference using native go reflection adds on average
-around 100x time execution overhead.
-
-```text
-Benchmark_Loop_Native-16                        35385890               30.36 ns/op             0 B/op          0 allocs/op
-Benchmark_Loop_Igo-16                            1000000              1081  ns/op               0 B/op          0 allocs/op
-Benchmark_Loop_GoEval-16                            1429            739672  ns/op          788350 B/op       3180 allocs/op
-```
-
-See the following benchmark that runs 100 000 000 loop iteration:
-```text
-	z := 0
-	a := 100000000
-	r := 1
-	for i := 1; i <= a; i++ {
-		r += i
-	}
-	z = r
+```bash
+go test ./internal/plan/bench -run '^$' -bench '.' -benchmem -count=1
 ```
 
 ```text
-BenchmarkLoop_Yaegi-16    	                      1	       3581461319 ns/op	          47560 B/op	    681 allocs/op
-BenchmarkLongLoop_Igo-16                          2         661982642 ns/op               8 B/op          0 allocs/op
-BenchmarkLongLoop_Native-16                      48          24813792 ns/op               0 B/op          0 allocs/op
+Benchmark_Loop_Native-10                     34.09 ns/op      0 B/op      0 allocs/op
+Benchmark_Loop_Igo-10                        239.0 ns/op      0 B/op      0 allocs/op
+
+Benchmark_ConditionalCall_Native-10          80.15 ns/op      0 B/op      0 allocs/op
+Benchmark_ConditionalCall_Igo-10             251.5 ns/op      0 B/op      0 allocs/op
+
+Benchmark_ComplexState_Native-10             1846 ns/op       0 B/op      0 allocs/op
+Benchmark_ComplexState_Igo-10                1898 ns/op       0 B/op      0 allocs/op
+
+Benchmark_MergeSort_Native-10                3921 ns/op       0 B/op      0 allocs/op
+Benchmark_MergeSort_Igo-10                   30703 ns/op      0 B/op      0 allocs/op
+
+Benchmark_RowFilter_Native-10                169.5 ns/op      64 B/op     4 allocs/op
+Benchmark_RowFilter_Igo-10                   1096 ns/op       160 B/op    8 allocs/op
+
+Benchmark_InlineHelperAdapter_Native-10      104.0 ns/op      8 B/op      1 allocs/op
+Benchmark_InlineHelperAdapter_Igo-10         1419 ns/op       472 B/op    18 allocs/op
 ```
-Igo is ~26x times slower than natively compile code, 
-whereas Yaegi is ~144x times slower than natively compile code
 
-## Bugs
+The conditional-call benchmark reflects the fused fast path for:
+- `for i := ...; ...; ... { if i <K/op { fn(i) } }`
+- `for i := ...; ...; ... { if i % M <op> K { fn(i) } }`
 
-This project does not implement full golang spec, but just a subset.
-At least following expression/types/construct are not supported
-- map type
-- named interface types (since pointers are used to access/mutate data)
-- go routines
-- select expression
-- switch expression
-- closures
+with `<op>` in `{==, !=, <, <=, >, >=}` and `fn` registered as `func(int)` or `func(int) int`.
+
+Additional workload notes from current snapshot:
+- `ComplexState_Igo` is ~1.03x native with zero allocations.
+- `MergeSort_Igo` is ~7.8x native with zero allocations.
+- `RowFilter_Igo` is ~6.5x native; allocation gap is now 8 vs 4 allocs/op.
+- `InlineHelperAdapter_Igo` is ~13.6x native; recent inline helper/append/toLower-path optimizations reduced this workload significantly.
+
+### Notes on specialization strategy
+
+Current speedups come from aggressive compile-time specialization in hot paths, not a bytecode VM:
+- typed `for` loop kernels (common arithmetic and call patterns)
+- typed map/slice fast paths for frequently used key/value/index shapes
+- branch-heavy fused loop bodies (used by complex-state style workloads)
+- stateful variadic callers for common signatures to avoid hidden allocations
+
+## Language support status
+
+igo supports a substantial Go subset with runtime and parser coverage tests.
+
+### Supported (current)
+
+- Declarations:
+  - short var declarations and typed var declarations
+  - type specs for `struct`, `interface`, `map`, and aliases
+- Literals:
+  - int, float, string, rune, imaginary
+- Control flow:
+  - `if`
+  - `for` (including specialized int-loop variants)
+  - `range` over slices/maps/strings (with key/value forms covered by tests)
+  - `switch` (tag and tagless), including `fallthrough`
+  - `type switch`
+  - `break`, `continue`, `goto`, and labels (including labeled break/continue)
+  - `defer`
+  - `return`
+- Types/operations:
+  - type assertions (`v := x.(T)` and `v, ok := x.(T)`)
+  - map read/write, `value,ok`, `delete`, range over map
+  - builtins used in tests/benchmarks: `len`, `make`, `append`, `delete`
+- Calls:
+  - registered functions
+  - variadic call paths, including optimized stateful caller paths for common signatures
+- Stdlib:
+  - lazy package/type/function resolution when referenced in expressions/scripts
+  - tests include examples with `strings`, `fmt`, and `time`
+
+### Not supported yet (known)
+
+- `go` statements (goroutines in script)
+- `select` statements
+- channel send statements (`ch <- v`)
+
+This is still not full Go spec coverage; unsupported constructs return compile-time errors.
 
 
 ## Contributing to igo
@@ -316,4 +336,3 @@ See [TODO](TODO.md) list
 ## Credits and Acknowledgements
 
 **Library Author:** Adrian Witas
-

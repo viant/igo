@@ -67,6 +67,24 @@ func TestScope_IntExpression(t *testing.T) {
 			state:       map[string]interface{}{"foo": Foo{X: 2, Y: 3}},
 			expect:      5,
 		},
+		{
+			description: "unary minus",
+			expr:        "-x + y",
+			state:       map[string]interface{}{"x": 10, "y": 3},
+			expect:      -7,
+		},
+		{
+			description: "unary plus",
+			expr:        "+x + y",
+			state:       map[string]interface{}{"x": 10, "y": 3},
+			expect:      13,
+		},
+		{
+			description: "unary xor",
+			expr:        "^x",
+			state:       map[string]interface{}{"x": 5},
+			expect:      ^5,
+		},
 	}
 
 	for _, testCase := range testCase {
@@ -268,6 +286,22 @@ func TestScope_StringExpression(t *testing.T) {
 		actual := anExpr.Compute()
 		assert.Equal(t, testCase.expect, actual, testCase.description)
 	}
+}
+
+func TestScope_FloatUnaryExpression(t *testing.T) {
+	scope := NewScope()
+	_, err := scope.DefineVariable("x", reflect.TypeOf(float64(0)))
+	if !assert.Nil(t, err) {
+		return
+	}
+	anExpr, err := scope.Float64Expression("-x")
+	if !assert.Nil(t, err) {
+		return
+	}
+	if !assert.Nil(t, anExpr.State.SetFloat64("x", 1.25)) {
+		return
+	}
+	assert.Equal(t, -1.25, anExpr.Compute())
 }
 
 func TestScope_Float64Expression(t *testing.T) {

@@ -29,7 +29,7 @@ func (s *returnStmt) computeR2(ptr unsafe.Pointer) unsafe.Pointer {
 	retValuePtr1 := s.operands[1].Compute(ptr)
 
 	s.results[0].SetValue(s.results[0].Upstream(ptr), s.operands[0].Interface(retValuePtr0))
-	s.results[1].SetValue(s.results[1].Upstream(ptr), s.operands[1].Interface(retValuePtr0))
+	s.results[1].SetValue(s.results[1].Upstream(ptr), s.operands[1].Interface(retValuePtr1))
 	*(*internal.Flow)(ptr) |= internal.RtReturn
 	return unsafe.Pointer(&[2]unsafe.Pointer{
 		retValuePtr0,
@@ -43,8 +43,8 @@ func (s *returnStmt) computeR3(ptr unsafe.Pointer) unsafe.Pointer {
 	retValuePtr2 := s.operands[2].Compute(ptr)
 
 	s.results[0].SetValue(s.results[0].Upstream(ptr), s.operands[0].Interface(retValuePtr0))
-	s.results[1].SetValue(s.results[1].Upstream(ptr), s.operands[1].Interface(retValuePtr0))
-	s.results[2].SetValue(s.results[2].Upstream(ptr), s.operands[2].Interface(retValuePtr0))
+	s.results[1].SetValue(s.results[1].Upstream(ptr), s.operands[1].Interface(retValuePtr1))
+	s.results[2].SetValue(s.results[2].Upstream(ptr), s.operands[2].Interface(retValuePtr2))
 	*(*internal.Flow)(ptr) |= internal.RtReturn
 	return unsafe.Pointer(&[3]unsafe.Pointer{
 		retValuePtr0,
@@ -60,9 +60,9 @@ func (s *returnStmt) computeR4(ptr unsafe.Pointer) unsafe.Pointer {
 	retValuePtr3 := s.operands[3].Compute(ptr)
 
 	s.results[0].SetValue(s.results[0].Upstream(ptr), s.operands[0].Interface(retValuePtr0))
-	s.results[1].SetValue(s.results[1].Upstream(ptr), s.operands[1].Interface(retValuePtr0))
-	s.results[2].SetValue(s.results[2].Upstream(ptr), s.operands[2].Interface(retValuePtr0))
-	s.results[3].SetValue(s.results[3].Upstream(ptr), s.operands[3].Interface(retValuePtr0))
+	s.results[1].SetValue(s.results[1].Upstream(ptr), s.operands[1].Interface(retValuePtr1))
+	s.results[2].SetValue(s.results[2].Upstream(ptr), s.operands[2].Interface(retValuePtr2))
+	s.results[3].SetValue(s.results[3].Upstream(ptr), s.operands[3].Interface(retValuePtr3))
 
 	*(*internal.Flow)(ptr) |= internal.RtReturn
 	return unsafe.Pointer(&[4]unsafe.Pointer{
@@ -73,7 +73,7 @@ func (s *returnStmt) computeR4(ptr unsafe.Pointer) unsafe.Pointer {
 	})
 }
 
-//NewReturnStmt creates a return stmt
+// NewReturnStmt creates a return stmt
 func NewReturnStmt(retOperands Operands, results []*exec.Selector) (New, error) {
 	return func(control *Control) (internal.Compute, error) {
 

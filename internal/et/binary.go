@@ -14,7 +14,7 @@ var falseValue = false
 var trueValuePointer = unsafe.Pointer(&trueValue)
 var falseValuePointer = unsafe.Pointer(&falseValue)
 
-//NewBinaryExpr creates binary expr
+// NewBinaryExpr creates binary expr
 func NewBinaryExpr(op token.Token, operands ...*Operand) (New, reflect.Type) {
 	opType := operands[0].Type.Type()
 	destType := opType
@@ -86,6 +86,12 @@ func NewBinaryExpr(op token.Token, operands ...*Operand) (New, reflect.Type) {
 }
 
 func newEql(operands Operands, control *Control) (internal.Compute, error) {
+	if xOffset, y, ok := intDirectRightConst(operands); ok {
+		return intEqlConstRight(xOffset, y), nil
+	}
+	if yOffset, x, ok := intDirectLeftConst(operands); ok {
+		return intEqlConstLeft(x, yOffset), nil
+	}
 
 	cmp, err := newComparison(operands, control)
 	if err != nil {
@@ -104,6 +110,12 @@ func newEql(operands Operands, control *Control) (internal.Compute, error) {
 }
 
 func newNeq(operands Operands, control *Control) (internal.Compute, error) {
+	if xOffset, y, ok := intDirectRightConst(operands); ok {
+		return intNeqConstRight(xOffset, y), nil
+	}
+	if yOffset, x, ok := intDirectLeftConst(operands); ok {
+		return intNeqConstLeft(x, yOffset), nil
+	}
 	cmp, err := newComparison(operands, control)
 	if err != nil {
 		return nil, err
@@ -167,6 +179,11 @@ func newShl(opType reflect.Type, operands Operands, control *Control) (internal.
 }
 
 func newAnd(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
+	if opType.Kind() == reflect.Int {
+		if xOffset, y, ok := intDirectRightConst(operands); ok {
+			return intAndConstRight(xOffset, y, operands[zOp].Offset()), nil
+		}
+	}
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -345,6 +362,11 @@ func newAndNotAssign(opType reflect.Type, operands Operands, control *Control) (
 }
 
 func newRem(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
+	if opType.Kind() == reflect.Int {
+		if xOffset, y, ok := intDirectRightConst(operands); ok {
+			return intRemConstRight(xOffset, y, operands[zOp].Offset()), nil
+		}
+	}
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -574,6 +596,14 @@ func newQuoAssign(opType reflect.Type, operands Operands, control *Control) (int
 }
 
 func newGtr(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
+	if opType.Kind() == reflect.Int {
+		if xOffset, y, ok := intDirectRightConst(operands); ok {
+			return intGtrConstRight(xOffset, y), nil
+		}
+		if yOffset, x, ok := intDirectLeftConst(operands); ok {
+			return intGtrConstLeft(x, yOffset), nil
+		}
+	}
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -599,6 +629,14 @@ func newGtr(opType reflect.Type, operands Operands, control *Control) (internal.
 }
 
 func newLss(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
+	if opType.Kind() == reflect.Int {
+		if xOffset, y, ok := intDirectRightConst(operands); ok {
+			return intLssConstRight(xOffset, y), nil
+		}
+		if yOffset, x, ok := intDirectLeftConst(operands); ok {
+			return intLssConstLeft(x, yOffset), nil
+		}
+	}
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -623,7 +661,171 @@ func newLss(opType reflect.Type, operands Operands, control *Control) (internal.
 	return Unsupported(fmt.Sprintf("unsupported  %v * %v", opType.Name(), opType.Name()))
 }
 
+func intLiteralValue(op *Operand) (int, bool) {
+	if op == nil || op.Selector != nil || op.New != nil {
+		return 0, false
+	}
+	value, ok := op.Value.(int)
+	return value, ok
+}
+
+func intDirectRightConst(operands Operands) (uintptr, int, bool) {
+	x := operands[xOp]
+	if x == nil || x.Selector == nil || x.Pathway != exec.PathwayDirect || x.Type.Kind() != reflect.Int {
+		return 0, 0, false
+	}
+	y, ok := intLiteralValue(operands[yOp])
+	if !ok {
+		return 0, 0, false
+	}
+	return x.Offset(), y, true
+}
+
+func intDirectLeftConst(operands Operands) (uintptr, int, bool) {
+	y := operands[yOp]
+	if y == nil || y.Selector == nil || y.Pathway != exec.PathwayDirect || y.Type.Kind() != reflect.Int {
+		return 0, 0, false
+	}
+	x, ok := intLiteralValue(operands[xOp])
+	if !ok {
+		return 0, 0, false
+	}
+	return y.Offset(), x, true
+}
+
+func intLssConstRight(xOffset uintptr, y int) internal.Compute {
+	return func(ptr unsafe.Pointer) unsafe.Pointer {
+		if *(*int)(unsafe.Pointer(uintptr(ptr) + xOffset)) < y {
+			return trueValuePointer
+		}
+		return falseValuePointer
+	}
+}
+
+func intLssConstLeft(x int, yOffset uintptr) internal.Compute {
+	return func(ptr unsafe.Pointer) unsafe.Pointer {
+		if x < *(*int)(unsafe.Pointer(uintptr(ptr) + yOffset)) {
+			return trueValuePointer
+		}
+		return falseValuePointer
+	}
+}
+
+func intLeqConstRight(xOffset uintptr, y int) internal.Compute {
+	return func(ptr unsafe.Pointer) unsafe.Pointer {
+		if *(*int)(unsafe.Pointer(uintptr(ptr) + xOffset)) <= y {
+			return trueValuePointer
+		}
+		return falseValuePointer
+	}
+}
+
+func intLeqConstLeft(x int, yOffset uintptr) internal.Compute {
+	return func(ptr unsafe.Pointer) unsafe.Pointer {
+		if x <= *(*int)(unsafe.Pointer(uintptr(ptr) + yOffset)) {
+			return trueValuePointer
+		}
+		return falseValuePointer
+	}
+}
+
+func intGtrConstRight(xOffset uintptr, y int) internal.Compute {
+	return func(ptr unsafe.Pointer) unsafe.Pointer {
+		if *(*int)(unsafe.Pointer(uintptr(ptr) + xOffset)) > y {
+			return trueValuePointer
+		}
+		return falseValuePointer
+	}
+}
+
+func intGtrConstLeft(x int, yOffset uintptr) internal.Compute {
+	return func(ptr unsafe.Pointer) unsafe.Pointer {
+		if x > *(*int)(unsafe.Pointer(uintptr(ptr) + yOffset)) {
+			return trueValuePointer
+		}
+		return falseValuePointer
+	}
+}
+
+func intGeqConstRight(xOffset uintptr, y int) internal.Compute {
+	return func(ptr unsafe.Pointer) unsafe.Pointer {
+		if *(*int)(unsafe.Pointer(uintptr(ptr) + xOffset)) >= y {
+			return trueValuePointer
+		}
+		return falseValuePointer
+	}
+}
+
+func intGeqConstLeft(x int, yOffset uintptr) internal.Compute {
+	return func(ptr unsafe.Pointer) unsafe.Pointer {
+		if x >= *(*int)(unsafe.Pointer(uintptr(ptr) + yOffset)) {
+			return trueValuePointer
+		}
+		return falseValuePointer
+	}
+}
+
+func intEqlConstRight(xOffset uintptr, y int) internal.Compute {
+	return func(ptr unsafe.Pointer) unsafe.Pointer {
+		if *(*int)(unsafe.Pointer(uintptr(ptr) + xOffset)) == y {
+			return trueValuePointer
+		}
+		return falseValuePointer
+	}
+}
+
+func intEqlConstLeft(x int, yOffset uintptr) internal.Compute {
+	return func(ptr unsafe.Pointer) unsafe.Pointer {
+		if x == *(*int)(unsafe.Pointer(uintptr(ptr) + yOffset)) {
+			return trueValuePointer
+		}
+		return falseValuePointer
+	}
+}
+
+func intNeqConstRight(xOffset uintptr, y int) internal.Compute {
+	return func(ptr unsafe.Pointer) unsafe.Pointer {
+		if *(*int)(unsafe.Pointer(uintptr(ptr) + xOffset)) != y {
+			return trueValuePointer
+		}
+		return falseValuePointer
+	}
+}
+
+func intNeqConstLeft(x int, yOffset uintptr) internal.Compute {
+	return func(ptr unsafe.Pointer) unsafe.Pointer {
+		if x != *(*int)(unsafe.Pointer(uintptr(ptr) + yOffset)) {
+			return trueValuePointer
+		}
+		return falseValuePointer
+	}
+}
+
+func intAndConstRight(xOffset uintptr, y int, zOffset uintptr) internal.Compute {
+	return func(ptr unsafe.Pointer) unsafe.Pointer {
+		z := unsafe.Pointer(uintptr(ptr) + zOffset)
+		*(*int)(z) = *(*int)(unsafe.Pointer(uintptr(ptr) + xOffset)) & y
+		return z
+	}
+}
+
+func intRemConstRight(xOffset uintptr, y int, zOffset uintptr) internal.Compute {
+	return func(ptr unsafe.Pointer) unsafe.Pointer {
+		z := unsafe.Pointer(uintptr(ptr) + zOffset)
+		*(*int)(z) = *(*int)(unsafe.Pointer(uintptr(ptr) + xOffset)) % y
+		return z
+	}
+}
+
 func newGeq(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
+	if opType.Kind() == reflect.Int {
+		if xOffset, y, ok := intDirectRightConst(operands); ok {
+			return intGeqConstRight(xOffset, y), nil
+		}
+		if yOffset, x, ok := intDirectLeftConst(operands); ok {
+			return intGeqConstLeft(x, yOffset), nil
+		}
+	}
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -649,6 +851,14 @@ func newGeq(opType reflect.Type, operands Operands, control *Control) (internal.
 }
 
 func newLeq(opType reflect.Type, operands Operands, control *Control) (internal.Compute, error) {
+	if opType.Kind() == reflect.Int {
+		if xOffset, y, ok := intDirectRightConst(operands); ok {
+			return intLeqConstRight(xOffset, y), nil
+		}
+		if yOffset, x, ok := intDirectLeftConst(operands); ok {
+			return intLeqConstLeft(x, yOffset), nil
+		}
+	}
 	switch operands.pathway() {
 	case exec.PathwayDirect:
 		expr := operands.directBinaryExpr()
@@ -774,8 +984,9 @@ func (e *binaryExpr) y(ptr unsafe.Pointer) unsafe.Pointer {
 }
 
 func (e *binaryExpr) stringAdd(ptr unsafe.Pointer) unsafe.Pointer {
-	z := *(*string)(e.x(ptr)) + *(*string)(e.y(ptr))
-	return unsafe.Pointer(&z)
+	z := e.z(ptr)
+	*(*string)(z) = *(*string)(e.x(ptr)) + *(*string)(e.y(ptr))
+	return z
 }
 
 func (e *binaryExpr) intRem(ptr unsafe.Pointer) unsafe.Pointer {
@@ -797,8 +1008,9 @@ func (e *binaryExpr) intAddAssign(ptr unsafe.Pointer) unsafe.Pointer {
 }
 
 func (e *binaryExpr) intSub(ptr unsafe.Pointer) unsafe.Pointer {
-	z := *(*int)(e.x(ptr)) - *(*int)(e.y(ptr))
-	return unsafe.Pointer(&z)
+	z := e.z(ptr)
+	*(*int)(z) = *(*int)(e.x(ptr)) - *(*int)(e.y(ptr))
+	return z
 }
 
 func (e *binaryExpr) intSubAssign(ptr unsafe.Pointer) unsafe.Pointer {
@@ -1008,25 +1220,23 @@ func (e *binaryExpr) float64Leq(ptr unsafe.Pointer) unsafe.Pointer {
 }
 
 func (e *binaryExpr) and(ptr unsafe.Pointer) unsafe.Pointer {
-	result := trueValuePointer
 	if !*(*bool)(e.x(ptr)) {
 		return falseValuePointer
 	}
-	if !*(*bool)(e.y(ptr)) {
-		return falseValuePointer
+	if *(*bool)(e.y(ptr)) {
+		return trueValuePointer
 	}
-	return result
+	return falseValuePointer
 }
 
 func (e *binaryExpr) or(ptr unsafe.Pointer) unsafe.Pointer {
-	result := falseValuePointer
 	if *(*bool)(e.x(ptr)) {
-		result = trueValuePointer
+		return trueValuePointer
 	}
 	if *(*bool)(e.y(ptr)) {
-		result = trueValuePointer
+		return trueValuePointer
 	}
-	return result
+	return falseValuePointer
 }
 
 type directBinaryExpr struct {
@@ -1040,8 +1250,9 @@ func (e *directBinaryExpr) z(ptr unsafe.Pointer) unsafe.Pointer {
 }
 
 func (e *directBinaryExpr) stringAdd(ptr unsafe.Pointer) unsafe.Pointer {
-	z := *(*string)(unsafe.Pointer(uintptr(ptr) + e.xOffset)) + *(*string)(unsafe.Pointer(uintptr(ptr) + e.yOffset))
-	return unsafe.Pointer(&z)
+	z := e.z(ptr)
+	*(*string)(z) = *(*string)(unsafe.Pointer(uintptr(ptr) + e.xOffset)) + *(*string)(unsafe.Pointer(uintptr(ptr) + e.yOffset))
+	return z
 }
 
 func (e *directBinaryExpr) intRem(ptr unsafe.Pointer) unsafe.Pointer {
@@ -1278,17 +1489,21 @@ func (e *directBinaryExpr) float64Leq(ptr unsafe.Pointer) unsafe.Pointer {
 }
 
 func (e *directBinaryExpr) lAnd(ptr unsafe.Pointer) unsafe.Pointer {
-	z := falseValuePointer
-	if *(*bool)(unsafe.Pointer(uintptr(ptr) + e.xOffset)) && *(*bool)(unsafe.Pointer(uintptr(ptr) + e.yOffset)) {
-		z = trueValuePointer
+	if !*(*bool)(unsafe.Pointer(uintptr(ptr) + e.xOffset)) {
+		return falseValuePointer
 	}
-	return z
+	if *(*bool)(unsafe.Pointer(uintptr(ptr) + e.yOffset)) {
+		return trueValuePointer
+	}
+	return falseValuePointer
 }
 
 func (e *directBinaryExpr) lOr(ptr unsafe.Pointer) unsafe.Pointer {
-	z := falseValuePointer
-	if *(*bool)(unsafe.Pointer(uintptr(ptr) + e.xOffset)) || *(*bool)(unsafe.Pointer(uintptr(ptr) + e.yOffset)) {
-		z = trueValuePointer
+	if *(*bool)(unsafe.Pointer(uintptr(ptr) + e.xOffset)) {
+		return trueValuePointer
 	}
-	return z
+	if *(*bool)(unsafe.Pointer(uintptr(ptr) + e.yOffset)) {
+		return trueValuePointer
+	}
+	return falseValuePointer
 }

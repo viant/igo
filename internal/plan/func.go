@@ -35,6 +35,11 @@ func (s *Scope) lookupFunction(id string) (interface{}, bool) {
 		return contains, true
 	}
 	fn, ok := s.funcs[id]
+	if !ok {
+		if fn, ok = s.stdlibFunction(id); ok {
+			return fn, true
+		}
+	}
 	return fn, ok
 }
 
@@ -53,12 +58,68 @@ func (s *Scope) compileBuildIn(id string, expr *ast.CallExpr) (et.New, reflect.T
 	case "make":
 		newFn, fType, err := s.compileMake(expr)
 		return newFn, fType, true, err
+	case "len":
+		newFn, fType, err := s.compileLen(expr)
+		return newFn, fType, true, err
+	case "int64":
+		newFn, fType, err := s.compileInt64Cast(expr)
+		return newFn, fType, true, err
+	case "delete":
+		newFn, fType, err := s.compileDelete(expr)
+		return newFn, fType, true, err
 	}
 	return nil, nil, false, nil
 }
 
+func (s *Scope) compileLen(expr *ast.CallExpr) (et.New, reflect.Type, error) {
+	if len(expr.Args) != 1 {
+		return nil, nil, fmt.Errorf("invalid len args call")
+	}
+	operand, err := s.assembleOperand(expr.Args[0], false)
+	if err != nil {
+		return nil, nil, err
+	}
+	if operand.Type == nil {
+		return nil, nil, fmt.Errorf("len operand type was empty")
+	}
+	switch operand.Type.Kind() {
+	case reflect.String, reflect.Slice, reflect.Map:
+	default:
+		return nil, nil, fmt.Errorf("unsupported len operand type: %s", operand.Type.Type().String())
+	}
+	return et.NewLen(operand)
+}
+
+func (s *Scope) compileInt64Cast(expr *ast.CallExpr) (et.New, reflect.Type, error) {
+	if len(expr.Args) != 1 {
+		return nil, nil, fmt.Errorf("invalid int64 args call")
+	}
+	operand, err := s.assembleOperand(expr.Args[0], false)
+	if err != nil {
+		return nil, nil, err
+	}
+	newFn, err := et.NewInt64Cast(operand)
+	return newFn, int64Type, err
+}
+
+func (s *Scope) compileDelete(expr *ast.CallExpr) (et.New, reflect.Type, error) {
+	if len(expr.Args) != 2 {
+		return nil, nil, fmt.Errorf("invalid delete args call")
+	}
+	m, err := s.assembleOperand(expr.Args[0], false)
+	if err != nil {
+		return nil, nil, err
+	}
+	key, err := s.assembleOperand(expr.Args[1], false)
+	if err != nil {
+		return nil, nil, err
+	}
+	newFn, err := et.NewDelete(m, key)
+	return newFn, nil, err
+}
+
 func (s *Scope) compileMake(expr *ast.CallExpr) (et.New, reflect.Type, error) {
-	if len(expr.Args) < 2 {
+	if len(expr.Args) < 1 {
 		return nil, nil, fmt.Errorf("invalid make args call")
 	}
 	sliceType, err := s.discoverType(expr.Args[0])

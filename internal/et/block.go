@@ -139,7 +139,37 @@ func (b *blockStmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	return result
 }
 
-//NewBlockStmt crates block node
+type jumpBlockStmt struct {
+	statements []internal.Compute
+	labels     map[uint32]int
+	forStmt    bool
+}
+
+func (b *jumpBlockStmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
+	var result unsafe.Pointer
+	flow := internal.AsFlow(ptr)
+	for pc := 0; pc < len(b.statements); {
+		result = b.statements[pc](ptr)
+		if flow.HasReturn() {
+			return result
+		}
+		if flow.HasGoto() {
+			if next, ok := b.labels[flow.Label()]; ok {
+				flow.ClearGoto()
+				pc = next
+				continue
+			}
+			return result
+		}
+		if b.forStmt && flow.HasBlockControl() {
+			return result
+		}
+		pc++
+	}
+	return result
+}
+
+// NewBlockStmt crates block node
 func NewBlockStmt(newStatementsFn []New, forStmt bool) New {
 	return func(control *Control) (internal.Compute, error) {
 		var stmts = make([]internal.Compute, len(newStatementsFn))
@@ -156,11 +186,45 @@ func NewBlockStmt(newStatementsFn []New, forStmt bool) New {
 			}
 			return newGroupStmt(stmts), nil
 		}
+		if control.HasControl() {
+			return newForBlockStmt(stmts), nil
+		}
 		if control.HasReturn() {
 			return newBlockStmt(stmts), nil
 		}
 		return newGroupStmt(stmts), nil
 
+	}
+}
+
+// NewJumpBlockStmt creates block node with label-aware goto dispatch.
+func NewJumpBlockStmt(newStatementsFn []New, labels map[uint32]int, forStmt bool) New {
+	return func(control *Control) (internal.Compute, error) {
+		var stmts = make([]internal.Compute, len(newStatementsFn))
+		var err error
+		for i := range newStatementsFn {
+			newFn := newStatementsFn[i]
+			if stmts[i], err = newFn(control); err != nil {
+				return nil, err
+			}
+		}
+		stmt := &jumpBlockStmt{statements: stmts, labels: labels, forStmt: forStmt}
+		return stmt.compute, nil
+	}
+}
+
+// NewControlBlockStmt creates block node that always honors break/continue/return flags.
+func NewControlBlockStmt(newStatementsFn []New) New {
+	return func(control *Control) (internal.Compute, error) {
+		var stmts = make([]internal.Compute, len(newStatementsFn))
+		var err error
+		for i := range newStatementsFn {
+			newFn := newStatementsFn[i]
+			if stmts[i], err = newFn(control); err != nil {
+				return nil, err
+			}
+		}
+		return newForBlockStmt(stmts), nil
 	}
 }
 

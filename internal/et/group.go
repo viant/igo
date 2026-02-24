@@ -9,6 +9,13 @@ func nop(ptr unsafe.Pointer) unsafe.Pointer {
 	return ptr
 }
 
+// NewNop returns a no-op compute node.
+func NewNop() New {
+	return func(control *Control) (internal.Compute, error) {
+		return nop, nil
+	}
+}
+
 type group2Stmt struct {
 	s1, s2 internal.Compute
 }
@@ -118,7 +125,7 @@ func (b *groupStmt) compute(ptr unsafe.Pointer) unsafe.Pointer {
 	return result
 }
 
-//NewGroupStmt crates group node
+// NewGroupStmt crates group node
 func NewGroupStmt(newStatementsFn []New, stmt bool) New {
 	return func(control *Control) (internal.Compute, error) {
 
